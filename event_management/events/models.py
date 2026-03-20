@@ -50,6 +50,7 @@ class TicketType(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2)
     total_quantity = models.PositiveIntegerField()
     sold_quantity = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ("event", "name")

@@ -57,7 +57,7 @@ def home(request):
 
 def event_detail(request, slug):
     event = get_object_or_404(Event, slug=slug)
-    ticket_types = event.ticket_types.all()
+    ticket_types = event.ticket_types.filter(is_active=True)
     has_available = any(ticket.available_quantity > 0 for ticket in ticket_types)
     registration_closed = event.registrations_closed
     if event.registration_deadline and event.registration_deadline <= timezone.now():
@@ -76,8 +76,8 @@ def event_detail(request, slug):
 
 def _get_selected_ticket(event, ticket_type_id):
     if ticket_type_id:
-        return event.ticket_types.filter(id=ticket_type_id).first()
-    return event.ticket_types.first()
+        return event.ticket_types.filter(id=ticket_type_id, is_active=True).first()
+    return event.ticket_types.filter(is_active=True).first()
 
 
 def registration_form(request, slug):
@@ -89,7 +89,7 @@ def registration_form(request, slug):
     if event.registration_deadline and event.registration_deadline <= timezone.now():
         messages.error(request, "Registration deadline has passed.")
         return redirect("events:event_detail", slug=event.slug)
-    if not event.ticket_types.exists():
+    if not event.ticket_types.filter(is_active=True).exists():
         messages.info(request, "Ticket types are not available yet.")
         return redirect("events:event_detail", slug=event.slug)
     ticket_type_id = request.GET.get("ticket_type") if request.method == "GET" else None
@@ -370,6 +370,29 @@ def edit_ticket_type(request, event_id, ticket_id):
         "events/organizer/ticket_form.html",
         {"form": form, "event": event, "ticket": ticket},
     )
+
+
+@login_required
+def delete_ticket_type(request, event_id, ticket_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    ticket = get_object_or_404(TicketType, id=ticket_id, event=event)
+    if request.method == "POST":
+        ticket.delete()
+        messages.success(request, "Ticket type deleted.")
+    return redirect("events:event_manage", event_id=event.public_id)
+
+
+@login_required
+def toggle_ticket_type(request, event_id, ticket_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    ticket = get_object_or_404(TicketType, id=ticket_id, event=event)
+    ticket.is_active = not ticket.is_active
+    ticket.save(update_fields=["is_active"])
+    if ticket.is_active:
+        messages.success(request, "Ticket type activated.")
+    else:
+        messages.success(request, "Ticket type deactivated.")
+    return redirect("events:event_manage", event_id=event.public_id)
 
 
 @login_required

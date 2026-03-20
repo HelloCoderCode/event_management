@@ -30,6 +30,16 @@ urlpatterns = [
         name="edit_ticket_type",
     ),
     path(
+        "organizer/events/<str:event_id>/tickets/<int:ticket_id>/delete/",
+        views.delete_ticket_type,
+        name="delete_ticket_type",
+    ),
+    path(
+        "organizer/events/<str:event_id>/tickets/<int:ticket_id>/toggle/",
+        views.toggle_ticket_type,
+        name="toggle_ticket_type",
+    ),
+    path(
         "organizer/events/<str:event_id>/fields/manage/",
         views.manage_registration_fields,
         name="manage_registration_fields",

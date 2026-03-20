@@ -31,8 +31,20 @@
     <ul>
         {% for ticket in ticket_types %}
             <li>
-                {{ ticket.name }} - INR {{ ticket.price }} ({{ ticket.available_quantity }} left)
+                {{ ticket.name }} - INR {{ ticket.price }}
+                ({{ ticket.available_quantity }} left)
+                {% if not ticket.is_active %}<span class="badge">Inactive</span>{% endif %}
                 <a href="{% url 'events:edit_ticket_type' event.public_id ticket.id %}">Edit</a>
+                <form method="post" action="{% url 'events:toggle_ticket_type' event.public_id ticket.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="btn btn-secondary" type="submit">
+                        {% if ticket.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                </form>
+                <form method="post" action="{% url 'events:delete_ticket_type' event.public_id ticket.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="btn btn-secondary" type="submit" onclick="return confirm('Delete this ticket type?');">Delete</button>
+                </form>
             </li>
         {% empty %}
             <li>No ticket types yet.</li>
