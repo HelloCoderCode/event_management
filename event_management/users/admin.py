@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import OrganizerProfile
+
+
+@admin.register(OrganizerProfile)
+class OrganizerProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "organization_name", "phone")

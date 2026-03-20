@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Add Registration Field{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Add Registration Field for {{ event.title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Label</label>
+            {{ form.label }}
+        </div>
+        <div class="form-group">
+            <label>Field Type</label>
+            {{ form.field_type }}
+        </div>
+        <div class="form-group">
+            <label>Required</label>
+            {{ form.required }}
+        </div>
+        <button class="btn" type="submit">Save Field</button>
+    </form>
+</section>
+{% endblock %}

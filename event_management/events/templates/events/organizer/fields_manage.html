@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Manage Registration Fields{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Registration Fields for {{ event.title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <div id="field-forms">
+            {% for form in formset %}
+                <div class="card" data-form-row>
+                    {{ form.id }}
+                    <div class="form-group">
+                        <label>Label</label>
+                        {{ form.label }}
+                        {{ form.label.errors }}
+                    </div>
+                    <div class="form-group">
+                        <label>Field Type</label>
+                        {{ form.field_type }}
+                        {{ form.field_type.errors }}
+                    </div>
+                    <div class="form-group">
+                        <label>Required</label>
+                        {{ form.required }}
+                        {{ form.required.errors }}
+                    </div>
+                    {% if form.DELETE %}
+                        <label style="display:none;">Delete {{ form.DELETE }}</label>
+                        {% if form.instance.is_system %}
+                            <span class="badge">Default Field</span>
+                        {% else %}
+                            <button type="button" class="btn btn-secondary" data-remove-row>Remove</button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <button type="button" class="btn" id="add-field-btn">Add New Field</button>
+        <button type="submit" class="btn btn-secondary">Save Fields</button>
+        <a class="btn btn-secondary" href="{% url 'events:event_manage' event.public_id %}">Back to Manage</a>
+    </form>
+</section>
+
+<template id="empty-form-template">
+    <div class="card" data-form-row>
+        {{ formset.empty_form.id }}
+        <div class="form-group">
+            <label>Label</label>
+            {{ formset.empty_form.label }}
+        </div>
+        <div class="form-group">
+            <label>Field Type</label>
+            {{ formset.empty_form.field_type }}
+        </div>
+        <div class="form-group">
+            <label>Required</label>
+            {{ formset.empty_form.required }}
+        </div>
+        <button type="button" class="btn btn-secondary" data-remove-row>Remove</button>
+    </div>
+</template>
+
+<script>
+    (function () {
+        const addBtn = document.getElementById("add-field-btn");
+        const container = document.getElementById("field-forms");
+        const totalForms = document.getElementById("id_form-TOTAL_FORMS");
+        const template = document.getElementById("empty-form-template");
+
+        addBtn.addEventListener("click", () => {
+            const formIndex = parseInt(totalForms.value, 10);
+            const clone = template.content.cloneNode(true);
+            clone.querySelectorAll("[name]").forEach((el) => {
+                el.name = el.name.replace("__prefix__", formIndex);
+            });
+            clone.querySelectorAll("[id]").forEach((el) => {
+                el.id = el.id.replace("__prefix__", formIndex);
+            });
+            container.appendChild(clone);
+            totalForms.value = formIndex + 1;
+        });
+
+        container.addEventListener("click", (event) => {
+            const btn = event.target.closest("[data-remove-row]");
+            if (!btn) return;
+            const row = btn.closest("[data-form-row]");
+            if (!row) return;
+            const deleteInput = row.querySelector("input[type='checkbox'][name$='-DELETE']");
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = "none";
+            } else {
+                row.remove();
+                totalForms.value = Math.max(parseInt(totalForms.value, 10) - 1, 0);
+            }
+        });
+    })();
+</script>
+{% endblock %}

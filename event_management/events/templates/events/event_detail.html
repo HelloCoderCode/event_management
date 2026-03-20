@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>{{ event.title }}</h1>
+    <p class="badge">
+        Start: {{ event.start_date }} {{ event.start_time }} •
+        End: {{ event.end_date }} {{ event.end_time }}
+    </p>
+    <p><strong>Location:</strong> {{ event.location }}</p>
+    <p>{{ event.description }}</p>
+    {% if event.image %}
+        <img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width:100%; border-radius:12px;">
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Tickets</h2>
+    {% if registration_closed %}
+        <div class="message">Registrations are closed for this event.</div>
+    {% endif %}
+    {% if ticket_types %}
+        <form method="get" action="{% url 'events:registration_form' event.slug %}">
+            <div class="ticket-grid">
+                {% for ticket in ticket_types %}
+                    <label class="ticket-row">
+                        <div>
+                            <strong>{{ ticket.name }}</strong>
+                            <div class="badge">INR {{ ticket.price }}</div>
+                            <div class="muted">
+                                {% if ticket.available_quantity == 0 %}
+                                    Sold out
+                                {% else %}
+                                    Available: {{ ticket.available_quantity }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <input type="radio" name="ticket_type" value="{{ ticket.id }}"
+                               {% if registration_closed %}disabled{% elif ticket.available_quantity == 0 %}disabled{% elif forloop.first %}checked{% endif %}>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label>Quantity</label>
+                <div class="qty-selector">
+                    <button type="button" class="qty-btn" data-qty-action="dec" data-qty-target="#quantity-input">-</button>
+                    <input id="quantity-input" type="number" name="quantity" value="1" min="1">
+                    <button type="button" class="qty-btn" data-qty-action="inc" data-qty-target="#quantity-input">+</button>
+                </div>
+            </div>
+            {% if not has_available %}
+                <div class="message">All ticket types are sold out.</div>
+            {% endif %}
+            <button class="btn" type="submit" {% if not has_available or registration_closed %}disabled{% endif %}>Register</button>
+        </form>
+    {% else %}
+        <p>No ticket types yet. Please check back later.</p>
+    {% endif %}
+</section>
+{% endblock %}

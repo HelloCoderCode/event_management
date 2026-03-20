@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Manage {{ event.title }}{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Manage Event</h1>
+    <div class="ticket-summary">
+        <div><strong>Title:</strong> {{ event.title }}</div>
+        <div><strong>Description:</strong> {{ event.description }}</div>
+        <div><strong>Start:</strong> {{ event.start_date }} {{ event.start_time }}</div>
+        <div><strong>End:</strong> {{ event.end_date }} {{ event.end_time }}</div>
+        <div><strong>Location:</strong> {{ event.location }}</div>
+        <div><strong>Keywords:</strong> {{ event.keywords|default:"-" }}</div>
+        <div><strong>Registration Deadline:</strong> {{ event.registration_deadline|default:"-" }}</div>
+        <div><strong>Registrations Closed:</strong> {{ event.registrations_closed|yesno:"Yes,No" }}</div>
+    </div>
+    {% if event.image %}
+        <div style="margin-top:12px;">
+            <img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width:320px; border-radius:12px;">
+        </div>
+    {% endif %}
+    <a class="btn" href="{% url 'events:event_edit' event.public_id %}">Edit Event Details</a>
+    <a class="btn btn-secondary" href="{% url 'events:toggle_event_status' event.public_id %}">
+        {% if event.registrations_closed %}Activate Event{% else %}Deactivate Event{% endif %}
+    </a>
+    <a class="btn btn-secondary" href="{% url 'events:organizer_dashboard' %}">Back to Dashboard</a>
+</section>
+
+<section class="card">
+    <h2>Ticket Types</h2>
+    <a class="btn" href="{% url 'events:add_ticket_type' event.public_id %}">Add New Ticket Type</a>
+    <ul>
+        {% for ticket in ticket_types %}
+            <li>
+                {{ ticket.name }} - INR {{ ticket.price }} ({{ ticket.available_quantity }} left)
+                <a href="{% url 'events:edit_ticket_type' event.public_id ticket.id %}">Edit</a>
+            </li>
+        {% empty %}
+            <li>No ticket types yet.</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="card">
+    <h2>Registration Fields</h2>
+    <a class="btn" href="{% url 'events:manage_registration_fields' event.public_id %}">
+        {% if fields %}Edit Registration Fields{% else %}Add Registration Fields{% endif %}
+    </a>
+    <ul>
+        {% for field in fields %}
+            <li>{{ field.label }} ({{ field.get_field_type_display }})</li>
+        {% empty %}
+            <li>No custom fields yet.</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

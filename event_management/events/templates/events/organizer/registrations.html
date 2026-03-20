@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Registrations{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Registrations for {{ event.title }}</h1>
+    <a class="btn" href="{% url 'events:registrations_export_csv' event.public_id %}">Export CSV</a>
+</section>
+
+<section class="card">
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Name</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Email</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Phone</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Ticket</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reg in registrations %}
+                <tr>
+                    <td style="padding:8px;">{{ reg.name }}</td>
+                    <td style="padding:8px;">{{ reg.email }}</td>
+                    <td style="padding:8px;">{{ reg.phone }}</td>
+                    <td style="padding:8px;">{{ reg.ticket_type.name }}</td>
+                    <td style="padding:8px;">{{ reg.quantity }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="padding:8px;">No registrations yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

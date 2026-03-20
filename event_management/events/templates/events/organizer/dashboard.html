@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Organizer Dashboard{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>Organizer Dashboard</h1>
+    <a class="btn" href="{% url 'events:event_create' %}">Create New Event</a>
+</section>
+
+<section class="grid">
+    {% for event in events %}
+        <article class="card">
+            <h3>{{ event.title }}</h3>
+            <p class="badge">
+                Start: {{ event.start_date }} {{ event.start_time }} •
+                End: {{ event.end_date }} {{ event.end_time }}
+            </p>
+            <p>{{ event.location }}</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a class="btn" href="{% url 'events:event_manage' event.public_id %}">Manage</a>
+                <a class="btn btn-secondary" href="{% url 'events:registrations_list' event.public_id %}">Registrations</a>
+            </div>
+        </article>
+    {% empty %}
+        <p>No events yet. Create your first event.</p>
+    {% endfor %}
+</section>
+{% endblock %}

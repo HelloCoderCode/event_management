@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Ticket {{ registration.booking_id }}{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Your Ticket</h1>
+    <p class="badge">{{ registration.event.title }}</p>
+    <div class="ticket-summary">
+        <div><strong>Booking ID:</strong> {{ registration.booking_id }}</div>
+        <div><strong>Name:</strong> {{ registration.name }}</div>
+        <div><strong>Email:</strong> {{ registration.email }}</div>
+        <div><strong>Ticket:</strong> {{ registration.ticket_type.name }}</div>
+        <div><strong>Quantity:</strong> {{ registration.quantity }}</div>
+    </div>
+    <div class="qr">
+        <img src="data:image/png;base64,{{ qr_data }}" alt="QR Code">
+    </div>
+    <div style="margin-top:16px;">
+        <a class="btn" href="{% url 'events:ticket_pdf' registration.booking_id %}">Download PDF Ticket</a>
+    </div>
+</section>
+{% endblock %}

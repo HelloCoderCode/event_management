@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>Upcoming Events</h1>
+    <p>Discover events and register in a few clicks.</p>
+</section>
+
+<section class="grid">
+    {% for event in events %}
+        <article class="card">
+            <h3>{{ event.title }}</h3>
+            <p class="badge">
+                Start: {{ event.start_date }} {{ event.start_time }} •
+                End: {{ event.end_date }} {{ event.end_time }}
+            </p>
+            <p>{{ event.location }}</p>
+            <p>{{ event.description|truncatechars:120 }}</p>
+            <a class="btn" href="{% url 'events:event_detail' event.slug %}">View Details</a>
+        </article>
+    {% empty %}
+        <p>No events available yet.</p>
+    {% endfor %}
+</section>
+{% endblock %}

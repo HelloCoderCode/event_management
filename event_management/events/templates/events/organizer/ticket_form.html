@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% if ticket %}Edit Ticket{% else %}Add Ticket{% endif %}{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>{% if ticket %}Edit Ticket Type{% else %}Add Ticket Type{% endif %} for {{ event.title }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Name</label>
+            {{ form.name }}
+        </div>
+        <div class="form-group">
+            <label>Price</label>
+            {{ form.price }}
+        </div>
+        <div class="form-group">
+            <label>Total Quantity</label>
+            {{ form.total_quantity }}
+        </div>
+        <button class="btn" type="submit">Save Ticket</button>
+    </form>
+    <div style="margin-top:16px;">
+        <a class="btn btn-secondary" href="{% url 'events:event_manage' event.public_id %}">Back to Manage</a>
+    </div>
+</section>
+{% endblock %}

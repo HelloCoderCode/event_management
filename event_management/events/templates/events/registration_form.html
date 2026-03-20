@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Register - {{ event.title }}{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Register for {{ event.title }}</h1>
+    <div class="ticket-summary">
+        <div><strong>Ticket:</strong> {{ selected_ticket.name }}</div>
+        <div><strong>Quantity:</strong> {{ selected_quantity }}</div>
+        <div><strong>Price:</strong> INR {{ selected_ticket.price }}</div>
+    </div>
+</section>
+
+<section class="card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="message">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% for field in display_fields %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+        {% endfor %}
+
+        {{ form.ticket_type }}
+        {{ form.quantity }}
+
+        <button class="btn" type="submit">Confirm Registration</button>
+    </form>
+</section>
+{% endblock %}
