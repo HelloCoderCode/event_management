@@ -328,7 +328,12 @@
                 <a href="{% url 'events:home' %}">Events</a>
                 <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'users:logout' %}">Logout</a>
+                    <a href="#" class="nav-cta" id="logout-link">
+                        Logout
+                    </a>
+                    <form method="post" action="{% url 'users:logout' %}" id="logout-form" style="display:none;">
+                        {% csrf_token %}
+                    </form>
                 {% else %}
                     <a href="{% url 'users:login' %}">Login</a>
                     <a href="{% url 'users:register' %}" class="nav-cta">
@@ -354,7 +359,7 @@
         <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
         <hr>
         {% if user.is_authenticated %}
-            <a href="{% url 'users:logout' %}">Logout</a>
+            <a href="#" id="logout-link-drawer">Logout</a>
         {% else %}
             <a href="{% url 'users:login' %}">Login</a>
             <a href="{% url 'users:register' %}">Register</a>
@@ -431,6 +436,22 @@
                 }, i * 200);
             });
         }, 4000);
+
+        const logoutLink = document.getElementById('logout-link');
+        const logoutForm = document.getElementById('logout-form');
+        if (logoutLink && logoutForm) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                logoutForm.submit();
+            });
+        }
+        const logoutLinkDrawer = document.getElementById('logout-link-drawer');
+        if (logoutLinkDrawer && logoutForm) {
+            logoutLinkDrawer.addEventListener('click', (e) => {
+                e.preventDefault();
+                logoutForm.submit();
+            });
+        }
     </script>
 </body>
 </html>
