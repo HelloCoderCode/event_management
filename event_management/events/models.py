@@ -15,6 +15,31 @@ class Event(models.Model):
     end_date = models.DateField(blank=True, null=True)
     start_time = models.TimeField(blank=True, null=True)
     end_time = models.TimeField(blank=True, null=True)
+    CATEGORY_ALL = "all"
+    CATEGORY_TECH = "technology"
+    CATEGORY_MUSIC = "music"
+    CATEGORY_WELLNESS = "wellness"
+    CATEGORY_ARTS = "arts"
+    CATEGORY_BUSINESS = "business"
+    CATEGORY_EDUCATION = "education"
+    CATEGORY_FOOD = "food"
+    CATEGORY_NORMAL = "normal"
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_ALL, "All Events"),
+        (CATEGORY_TECH, "Technology"),
+        (CATEGORY_MUSIC, "Music"),
+        (CATEGORY_WELLNESS, "Wellness"),
+        (CATEGORY_ARTS, "Arts & Culture"),
+        (CATEGORY_BUSINESS, "Business"),
+        (CATEGORY_EDUCATION, "Education"),
+        (CATEGORY_FOOD, "Food & Drink"),
+        (CATEGORY_NORMAL, "Event"),
+    ]
+
+    category = models.CharField(
+        max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_NORMAL
+    )
     keywords = models.CharField(max_length=255, blank=True)
     registrations_closed = models.BooleanField(default=False)
     registration_deadline = models.DateTimeField(blank=True, null=True)

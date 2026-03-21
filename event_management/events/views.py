@@ -54,8 +54,12 @@ def ensure_default_fields(event):
 
 
 def home(request):
-    events = Event.objects.all()
-    return render(request, "events/home.html", {"events": events})
+    category = request.GET.get("category", "all")
+    if category == "all":
+        events = Event.objects.all()
+    else:
+        events = Event.objects.filter(category=category)
+    return render(request, "events/home.html", {"events": events, "category": category})
 
 
 def event_detail(request, slug):

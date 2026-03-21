@@ -597,32 +597,32 @@
 
 <!-- ── FILTER PILLS ───────────────────────────────────────────── -->
 <div class="ev-full ev-filter-bar">
-  <button class="ev-filter-pill active">All Events</button>
-  <button class="ev-filter-pill">
+  <a class="ev-filter-pill {% if category == 'all' %}active{% endif %}" href="{% url 'events:home' %}?category=all#events">All Events</a>
+  <a class="ev-filter-pill {% if category == 'technology' %}active{% endif %}" href="{% url 'events:home' %}?category=technology#events">
     <span class="ev-filter-dot" style="background:#0071e3"></span>Technology
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'music' %}active{% endif %}" href="{% url 'events:home' %}?category=music#events">
     <span class="ev-filter-dot" style="background:#ff9f0a"></span>Music
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'wellness' %}active{% endif %}" href="{% url 'events:home' %}?category=wellness#events">
     <span class="ev-filter-dot" style="background:#34c759"></span>Wellness
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'arts' %}active{% endif %}" href="{% url 'events:home' %}?category=arts#events">
     <span class="ev-filter-dot" style="background:#bf5af2"></span>Arts &amp; Culture
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'business' %}active{% endif %}" href="{% url 'events:home' %}?category=business#events">
     <span class="ev-filter-dot" style="background:#ff375f"></span>Business
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'education' %}active{% endif %}" href="{% url 'events:home' %}?category=education#events">
     <span class="ev-filter-dot" style="background:#5ac8fa"></span>Education
-  </button>
-  <button class="ev-filter-pill">
+  </a>
+  <a class="ev-filter-pill {% if category == 'food' %}active{% endif %}" href="{% url 'events:home' %}?category=food#events">
     <span class="ev-filter-dot" style="background:#ffd60a"></span>Food &amp; Drink
-  </button>
+  </a>
 </div>
 
 <!-- ── EVENTS GRID ────────────────────────────────────────────── -->
-<section class="ev-full ev-grid">
+<section class="ev-full ev-grid" id="events">
   {% for event in events %}
     <!-- Regular card -->
     <article class="ev-card">
@@ -694,12 +694,6 @@
 </div>
 
 <script>
-  /* Filter pill interactivity */
-  document.querySelectorAll('.ev-filter-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.ev-filter-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-    });
-  });
+  /* No JS needed; links set the active state server-side */
 </script>
 {% endblock %}

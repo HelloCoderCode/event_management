@@ -465,6 +465,14 @@
           </div>
 
           <div class="ef-field full">
+            <label class="ef-label" for="{{ form.category.id_for_label }}">
+              Category <span class="ef-required">*</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}<span class="ef-field-error">{{ form.category.errors|join:", " }}</span>{% endif %}
+          </div>
+
+          <div class="ef-field full">
             <label class="ef-label" for="{{ form.keywords.id_for_label }}">Keywords</label>
             <span class="ef-hint">Comma-separated tags to help attendees discover your event.</span>
             {{ form.keywords }}

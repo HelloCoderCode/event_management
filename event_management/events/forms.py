@@ -15,6 +15,7 @@ class EventForm(forms.ModelForm):
             "start_time",
             "end_time",
             "location",
+            "category",
             "keywords",
             "registration_deadline",
             "image",
