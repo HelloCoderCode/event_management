@@ -507,7 +507,7 @@
         <circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
       </svg>
     </div>
-    <div class="od-stat-num">—</div>
+    <div class="od-stat-num">{{ total_registrations }}</div>
     <div class="od-stat-label">Registrations</div>
   </div>
   <div class="od-stat-card">
@@ -516,7 +516,7 @@
         <path d="M8 1.5A4.5 4.5 0 0 1 12.5 6C12.5 10 8 14.5 8 14.5S3.5 10 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/>
       </svg>
     </div>
-    <div class="od-stat-num">—</div>
+    <div class="od-stat-num">{{ total_checked_in }}</div>
     <div class="od-stat-label">Checked In</div>
   </div>
   <div class="od-stat-card">
@@ -525,7 +525,7 @@
         <path d="M1 9.5A2.5 2.5 0 0 0 3.5 12H5l1 2 1-2h3l1 2 1-2h1.5A2.5 2.5 0 0 0 15 9.5v-3A2.5 2.5 0 0 0 12.5 4H3.5A2.5 2.5 0 0 0 1 6.5v3Z"/>
       </svg>
     </div>
-    <div class="od-stat-num">—</div>
+    <div class="od-stat-num">{{ tickets_sold }}</div>
     <div class="od-stat-label">Tickets Sold</div>
   </div>
 </div>
@@ -569,10 +569,14 @@
       <div class="od-reg-bar-wrap">
         <div class="od-reg-bar-head">
           <span>Registrations</span>
-          <span>— / —</span>
+          <span>
+            {{ event.reg_count|default:0 }}
+            /
+            {% if event.capacity_total %}{{ event.capacity_total }}{% else %}—{% endif %}
+          </span>
         </div>
         <div class="od-reg-bar">
-          <div class="od-reg-fill" style="width: 0%"></div>
+          <div class="od-reg-fill" style="width: {{ event.reg_percent }}%"></div>
         </div>
       </div>
     </div>

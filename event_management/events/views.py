@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.db.models import Sum, Count
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
@@ -289,11 +290,43 @@ def ticket_pdf(request, booking_id):
 
 @login_required
 def organizer_dashboard(request):
-    events = Event.objects.filter(organizer=request.user)
+    events = (
+        Event.objects.filter(organizer=request.user)
+        .annotate(
+            reg_count=Count("registrations"),
+            sold_total=Sum("ticket_types__sold_quantity"),
+            capacity_total=Sum("ticket_types__total_quantity"),
+        )
+    )
     for event in events:
         if not event.public_id:
             event.save()
-    return render(request, "events/organizer/dashboard.html", {"events": events})
+        capacity = event.capacity_total or 0
+        reg_count = event.reg_count or 0
+        if capacity > 0:
+            event.reg_percent = int(min(100, (reg_count / capacity) * 100))
+        else:
+            event.reg_percent = 0
+    total_registrations = Registration.objects.filter(event__organizer=request.user).count()
+    total_checked_in = Registration.objects.filter(
+        event__organizer=request.user, checked_in=True
+    ).count()
+    tickets_sold = (
+        TicketType.objects.filter(event__organizer=request.user).aggregate(
+            total=Sum("sold_quantity")
+        )["total"]
+        or 0
+    )
+    return render(
+        request,
+        "events/organizer/dashboard.html",
+        {
+            "events": events,
+            "total_registrations": total_registrations,
+            "total_checked_in": total_checked_in,
+            "tickets_sold": tickets_sold,
+        },
+    )
 
 
 @login_required
