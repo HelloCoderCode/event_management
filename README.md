@@ -27,6 +27,7 @@ A complete Event Management System built using Django where users can explore ev
 * Define registration fields
 * View all registrations
 * Export data as CSV
+* Check‑in system (manual + QR scan)
 
 ---
 
