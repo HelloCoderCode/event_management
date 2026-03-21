@@ -87,7 +87,6 @@ env\Scripts\activate
 ```bash
 source env/bin/activate
 ```
-
 ---
 
 ###  4. Install Dependencies
