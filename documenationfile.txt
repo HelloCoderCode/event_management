@@ -1,0 +1,215 @@
+
+
+# Eventify – Event Management System
+
+A complete Event Management System built using Django where users can explore events and book tickets, while organizers can create and manage events.
+
+---
+
+## Features
+
+### Attendee (No Login Required)
+- View all events
+- See event details and ticket types
+- Select ticket quantity (+ / - UI)
+- Register with details (Name, Email, Phone, etc.)
+- Get booking confirmation
+- QR Code generation for tickets
+- Download PDF ticket
+- Email confirmation
+
+### Organizer
+- Register & Login
+- Create and manage events
+- Add custom ticket types (Free, VIP, etc.)
+- Define registration fields (including file upload)
+- View all registrations
+- Export data as CSV
+- Check‑in system (manual + QR scan)
+
+### Admin Panel
+Full control over:
+- Events
+- Tickets
+- Users
+- Registrations
+
+---
+
+## Tech Stack
+
+- **Backend:** Django (Python)  
+- **Frontend:** HTML, CSS, JavaScript (Django templates)  
+- **Database:** SQLite  
+
+**Libraries:**
+- Pillow (Image handling)
+- qrcode (QR generation)
+- reportlab (PDF tickets)
+
+---
+
+## Project Setup
+
+### 1) Clone Repository
+```bash
+git clone https://github.com/SoftwareTechnology-Hub/event_management.git
+cd event_management/event_management
+```
+
+### 2) Create Virtual Environment
+```bash
+python -m venv env
+```
+
+### 3) Activate Environment
+**Windows**
+```bash
+env\Scripts\activate
+```
+**Linux/Mac**
+```bash
+source env/bin/activate
+```
+
+### 4) Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 5) Run Migrations
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### 6) Create Superuser
+```bash
+python manage.py createsuperuser
+```
+
+### 7) Run Server
+```bash
+python manage.py runserver
+```
+
+### 8) Open in Browser
+- Home: `http://127.0.0.1:8000/`
+- Admin: `http://127.0.0.1:8000/admin/`
+
+---
+
+## Key URLs
+
+### Attendee
+- Homepage: `/`
+- Event Detail: `/events/<slug>/`
+- Registration form: `/events/<slug>/register/`
+- Ticket page: `/ticket/<booking_id>/`
+- PDF ticket: `/ticket/<booking_id>/pdf/`
+
+### Organizer
+- Login: `/accounts/login/`
+- Register: `/accounts/register/`
+- Dashboard: `/organizer/dashboard/`
+- Create Event: `/organizer/events/create/`
+- Manage Event: `/organizer/events/<public_id>/manage/`
+- Edit Event: `/organizer/events/<public_id>/edit/`
+- Ticket Types: `/organizer/events/<public_id>/tickets/add/`
+- Registration Fields: `/organizer/events/<public_id>/fields/manage/`
+- Registrations list: `/organizer/events/<public_id>/registrations/`
+- Check‑in: `/organizer/events/<public_id>/checkin/`
+
+### Admin
+- Django Admin: `/admin/`
+
+---
+
+## Models
+
+### Event
+- Organizer (user)
+- Title, description, location
+- Start/End date + time
+- Image
+- Category
+- Keywords
+- Registration deadline
+- Registrations open/closed
+- Public ID (random string)
+- Slug
+
+### TicketType
+- Event
+- Name
+- Price
+- Total quantity
+- Sold quantity
+- Active/inactive
+
+### Registration
+- Event, ticket type, quantity
+- Name, email, phone
+- Booking ID (unique)
+- Check‑in status
+
+### RegistrationField
+- Event
+- Label, type (text/email/number/date/file)
+- Required
+- System field flag (name/email/phone)
+
+### RegistrationFieldValue
+- Registration
+- Field reference
+- Value / File
+
+---
+
+## Email Settings
+
+Update `settings.py`:
+```python
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your_email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your_app_password'
+```
+
+---
+
+## Notes
+- Always run commands where `manage.py` exists.
+- Use a virtual environment to avoid dependency conflicts.
+- Ignore warnings related to `moviepy` (not used in this project).
+
+---
+
+## Common Issues
+
+### Logout 405
+Logout now uses POST with a hidden form + JS. Works with Django 5+.
+
+### New model fields not visible
+Run migrations:
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+---
+
+## Future Enhancements
+- Online payment integration  
+- Email verification system  
+- Mobile responsive UI  
+- Event analytics dashboard  
+
+---
+
+## Author
+Developed by **SoftwareTechnology-Hub**
+
+-
