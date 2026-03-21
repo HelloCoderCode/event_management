@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Delete Event{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Delete Event</h1>
+    <p>Are you sure you want to delete <strong>{{ event.title }}</strong>?</p>
+    <p>This will delete the event, ticket types, registrations, and custom fields.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-secondary" type="submit" onclick="return confirm('This will permanently delete everything for this event. Continue?');">
+            Yes, Delete Everything
+        </button>
+        <a class="btn" href="{% url 'events:event_manage' event.public_id %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}

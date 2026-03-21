@@ -73,6 +73,8 @@ class Registration(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=30)
     booking_id = models.CharField(max_length=20, unique=True, blank=True)
+    checked_in = models.BooleanField(default=False)
+    checked_in_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

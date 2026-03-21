@@ -18,6 +18,11 @@ urlpatterns = [
         views.toggle_event_status,
         name="toggle_event_status",
     ),
+    path(
+        "organizer/events/<str:event_id>/delete/",
+        views.delete_event_confirm,
+        name="delete_event_confirm",
+    ),
     path("organizer/events/<str:event_id>/edit/", views.event_edit, name="event_edit"),
     path(
         "organizer/events/<str:event_id>/tickets/add/",
@@ -50,8 +55,33 @@ urlpatterns = [
         name="registrations_list",
     ),
     path(
+        "organizer/events/<str:event_id>/registrations/<int:registration_id>/edit/",
+        views.registration_edit,
+        name="registration_edit",
+    ),
+    path(
+        "organizer/events/<str:event_id>/registrations/<int:registration_id>/delete/",
+        views.registration_delete,
+        name="registration_delete",
+    ),
+    path(
         "organizer/events/<str:event_id>/registrations/export/",
         views.registrations_export_csv,
         name="registrations_export_csv",
+    ),
+    path(
+        "organizer/events/<str:event_id>/checkin/",
+        views.checkin_dashboard,
+        name="checkin_dashboard",
+    ),
+    path(
+        "organizer/events/<str:event_id>/checkin/scan/",
+        views.checkin_scan,
+        name="checkin_scan",
+    ),
+    path(
+        "organizer/events/<str:event_id>/checkin/<int:registration_id>/confirm/",
+        views.checkin_confirm,
+        name="checkin_confirm",
     ),
 ]

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}QR Check-in{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>QR Check-in: {{ event.title }}</h1>
+    <p>Use your camera to scan the QR code. After scan, attendee details will appear.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn" id="start-scan">Start Camera</button>
+        <button class="btn btn-secondary" id="stop-scan">Stop Camera</button>
+        <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}">Back</a>
+    </div>
+</section>
+
+<section class="card">
+    <video id="video" style="width:100%; max-width:520px; border-radius:12px; border:1px solid #e2ded5;" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="scan-status" class="message" style="display:none;"></div>
+</section>
+
+{% if error %}
+    <section class="card">
+        <div class="message">{{ error }}</div>
+    </section>
+{% endif %}
+
+{% if registration %}
+    <section class="card">
+        <h2>Attendee Details</h2>
+        <p><strong>Name:</strong> {{ registration.name }}</p>
+        <p><strong>Email:</strong> {{ registration.email }}</p>
+        <p><strong>Phone:</strong> {{ registration.phone }}</p>
+        <p><strong>Booking ID:</strong> {{ registration.booking_id }}</p>
+        <p><strong>Ticket:</strong> {{ registration.ticket_type.name }} x {{ registration.quantity }}</p>
+        <form method="post" action="{% url 'events:checkin_confirm' event.public_id registration.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">
+                {% if registration.checked_in %}Checked In{% else %}Check In{% endif %}
+            </button>
+        </form>
+    </section>
+{% endif %}
+
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+<script>
+    (function () {
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const statusEl = document.getElementById("scan-status");
+        const startBtn = document.getElementById("start-scan");
+        const stopBtn = document.getElementById("stop-scan");
+        let stream = null;
+        let scanning = false;
+
+        function setStatus(text) {
+            statusEl.textContent = text;
+            statusEl.style.display = "block";
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                scanning = true;
+                setStatus("Scanning...");
+                requestAnimationFrame(tick);
+            } catch (err) {
+                setStatus("Camera access denied or unavailable.");
+            }
+        }
+
+        function stopCamera() {
+            scanning = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            setStatus("Camera stopped.");
+        }
+
+        function tick() {
+            if (!scanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code && code.data) {
+                    const bookingId = code.data.trim();
+                    setStatus("QR detected. Loading details...");
+                    window.location.href = "{% url 'events:checkin_scan' event.public_id %}?booking_id=" + encodeURIComponent(bookingId);
+                    return;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        startBtn.addEventListener("click", startCamera);
+        stopBtn.addEventListener("click", stopCamera);
+    })();
+</script>
+{% endblock %}

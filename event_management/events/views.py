@@ -5,9 +5,10 @@ import io
 import qrcode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
@@ -15,6 +16,7 @@ from reportlab.pdfgen import canvas
 
 from .forms import (
     EventForm,
+    RegistrationEditForm,
     RegistrationFieldFormSet,
     RegistrationForm,
     TicketTypeForm,
@@ -148,12 +150,22 @@ def registration_form(request, slug):
 
                 organizer_email = event.organizer.email if event.organizer else ""
                 subject = f"Your ticket for {event.title}"
-                message = (
+
+                field_values = registration.field_values.select_related("field").all()
+                custom_fields = [
+                    {
+                        "label": value.field.label,
+                        "value": value.value or (value.file.name if value.file else ""),
+                    }
+                    for value in field_values
+                ]
+
+                text_message = (
                     "Thanks for registering.\n\n"
                     f"Booking ID: {registration.booking_id}\n"
                     f"Event: {event.title}\n"
-                    f"Dates: {event.start_date} to {event.end_date}\n"
-                    f"Times: {event.start_time} to {event.end_time}\n"
+                    f"Start: {event.start_date} {event.start_time}\n"
+                    f"End: {event.end_date} {event.end_time}\n"
                     f"Location: {event.location}\n"
                     f"Tickets: {ticket_type.name} x {quantity}\n"
                     f"Name: {registration.name}\n"
@@ -161,12 +173,24 @@ def registration_form(request, slug):
                     f"Phone: {registration.phone}\n"
                 )
 
-                email = EmailMessage(
+                html_message = render_to_string(
+                    "events/email/registration_email.html",
+                    {
+                        "event": event,
+                        "registration": registration,
+                        "ticket_type": ticket_type,
+                        "quantity": quantity,
+                        "custom_fields": custom_fields,
+                    },
+                )
+
+                email = EmailMultiAlternatives(
                     subject=subject,
-                    body=message,
+                    body=text_message,
                     to=[registration.email],
                     cc=[organizer_email] if organizer_email else None,
                 )
+                email.attach_alternative(html_message, "text/html")
                 email.attach(
                     filename=f"ticket-{registration.booking_id}.png",
                     content=qr_png.getvalue(),
@@ -316,6 +340,16 @@ def toggle_event_status(request, event_id):
 
 
 @login_required
+def delete_event_confirm(request, event_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    if request.method == "POST":
+        event.delete()
+        messages.success(request, "Event and all associated data deleted.")
+        return redirect("events:organizer_dashboard")
+    return render(request, "events/organizer/event_delete_confirm.html", {"event": event})
+
+
+@login_required
 def event_edit(request, event_id):
     event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
     if request.method == "POST":
@@ -430,12 +464,122 @@ def manage_registration_fields(request, event_id):
 @login_required
 def registrations_list(request, event_id):
     event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
-    registrations = event.registrations.select_related("ticket_type")
+    registrations = event.registrations.select_related("ticket_type").prefetch_related(
+        "field_values__field"
+    )
+    custom_fields = list(
+        event.registration_fields.exclude(key__in=["name", "email", "phone"]).all()
+    )
+    rows = []
+    for reg in registrations:
+        values_by_field_id = {}
+        for value in reg.field_values.all():
+            if value.field.key in {"name", "email", "phone"}:
+                continue
+            display_value = value.value
+            if value.file:
+                display_value = value.file.name
+            values_by_field_id[value.field_id] = display_value
+        rows.append(
+            {
+                "registration": reg,
+                "qr_data": _qr_base64(reg.booking_id),
+                "values_by_field_id": values_by_field_id,
+            }
+        )
     return render(
         request,
         "events/organizer/registrations.html",
-        {"event": event, "registrations": registrations},
+        {
+            "event": event,
+            "rows": rows,
+            "custom_fields": custom_fields,
+            "colspan": 8 + len(custom_fields),
+        },
     )
+
+
+@login_required
+def registration_edit(request, event_id, registration_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    registration = get_object_or_404(Registration, id=registration_id, event=event)
+    ensure_default_fields(event)
+    if request.method == "POST":
+        form = RegistrationEditForm(
+            request.POST, request.FILES, event=event, registration=registration
+        )
+        if form.is_valid():
+            new_ticket = form.cleaned_data["ticket_type"]
+            new_qty = form.cleaned_data["quantity"]
+
+            if new_ticket == registration.ticket_type:
+                extra_needed = new_qty - registration.quantity
+                if extra_needed > new_ticket.available_quantity:
+                    form.add_error(None, "Not enough tickets available for this change.")
+                    return render(
+                        request,
+                        "events/organizer/registration_edit.html",
+                        {"form": form, "event": event, "registration": registration},
+                    )
+                new_ticket.sold_quantity += extra_needed
+                new_ticket.save()
+            else:
+                if new_qty > new_ticket.available_quantity:
+                    form.add_error(None, "Not enough tickets available for this change.")
+                    return render(
+                        request,
+                        "events/organizer/registration_edit.html",
+                        {"form": form, "event": event, "registration": registration},
+                    )
+                registration.ticket_type.sold_quantity = max(
+                    registration.ticket_type.sold_quantity - registration.quantity, 0
+                )
+                registration.ticket_type.save()
+                new_ticket.sold_quantity += new_qty
+                new_ticket.save()
+
+            registration.name = form.cleaned_data["name"]
+            registration.email = form.cleaned_data["email"]
+            registration.phone = form.cleaned_data["phone"]
+            registration.ticket_type = new_ticket
+            registration.quantity = new_qty
+            registration.save()
+
+            for field in event.registration_fields.exclude(key__in=["name", "email", "phone"]):
+                value = form.cleaned_data.get(field.key, "")
+                field_value, _ = RegistrationFieldValue.objects.get_or_create(
+                    registration=registration, field=field
+                )
+                if field.field_type == RegistrationField.FIELD_FILE:
+                    if value:
+                        field_value.file = value
+                else:
+                    field_value.value = str(value)
+                field_value.save()
+
+            messages.success(request, "Registration updated.")
+            return redirect("events:registrations_list", event_id=event.public_id)
+    else:
+        form = RegistrationEditForm(event=event, registration=registration)
+
+    return render(
+        request,
+        "events/organizer/registration_edit.html",
+        {"form": form, "event": event, "registration": registration},
+    )
+
+
+@login_required
+def registration_delete(request, event_id, registration_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    registration = get_object_or_404(Registration, id=registration_id, event=event)
+    if request.method == "POST":
+        ticket = registration.ticket_type
+        ticket.sold_quantity = max(ticket.sold_quantity - registration.quantity, 0)
+        ticket.save()
+        registration.delete()
+        messages.success(request, "Registration deleted.")
+    return redirect("events:registrations_list", event_id=event.public_id)
 
 
 @login_required
@@ -454,3 +598,48 @@ def registrations_export_csv(request, event_id):
             [reg.name, reg.email, reg.phone, reg.ticket_type.name, reg.quantity, reg.booking_id]
         )
     return response
+
+
+@login_required
+def checkin_dashboard(request, event_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    status = request.GET.get("status", "all")
+    registrations = event.registrations.select_related("ticket_type")
+    if status == "checked_in":
+        registrations = registrations.filter(checked_in=True)
+    elif status == "not_checked_in":
+        registrations = registrations.filter(checked_in=False)
+    return render(
+        request,
+        "events/organizer/checkin_dashboard.html",
+        {"event": event, "registrations": registrations, "status": status},
+    )
+
+
+@login_required
+def checkin_scan(request, event_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    booking_id = request.GET.get("booking_id", "")
+    registration = None
+    error = ""
+    if booking_id:
+        registration = event.registrations.filter(booking_id=booking_id).first()
+        if not registration:
+            error = "No registration found for this QR code."
+    return render(
+        request,
+        "events/organizer/checkin_scan.html",
+        {"event": event, "registration": registration, "error": error},
+    )
+
+
+@login_required
+def checkin_confirm(request, event_id, registration_id):
+    event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
+    registration = get_object_or_404(Registration, id=registration_id, event=event)
+    if request.method == "POST":
+        registration.checked_in = True
+        registration.checked_in_at = timezone.now()
+        registration.save(update_fields=["checked_in", "checked_in_at"])
+        messages.success(request, "Checked in successfully.")
+    return redirect("events:checkin_scan", event_id=event.public_id)

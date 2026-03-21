@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load registration_extras %}
 {% block title %}Registrations{% endblock %}
 {% block content %}
 <section class="card">
@@ -15,20 +16,46 @@
                 <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Phone</th>
                 <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Ticket</th>
                 <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Quantity</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Booking ID</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">QR</th>
+                {% for field in custom_fields %}
+                    <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">
+                        {{ field.label }}
+                    </th>
+                {% endfor %}
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for reg in registrations %}
+            {% for row in rows %}
                 <tr>
-                    <td style="padding:8px;">{{ reg.name }}</td>
-                    <td style="padding:8px;">{{ reg.email }}</td>
-                    <td style="padding:8px;">{{ reg.phone }}</td>
-                    <td style="padding:8px;">{{ reg.ticket_type.name }}</td>
-                    <td style="padding:8px;">{{ reg.quantity }}</td>
+                    <td style="padding:8px;">{{ row.registration.name }}</td>
+                    <td style="padding:8px;">{{ row.registration.email }}</td>
+                    <td style="padding:8px;">{{ row.registration.phone }}</td>
+                    <td style="padding:8px;">{{ row.registration.ticket_type.name }}</td>
+                    <td style="padding:8px;">{{ row.registration.quantity }}</td>
+                    <td style="padding:8px;">{{ row.registration.booking_id }}</td>
+                    <td style="padding:8px;">
+                        <img src="data:image/png;base64,{{ row.qr_data }}" alt="QR" style="width:80px; height:80px;">
+                    </td>
+                    {% for field in custom_fields %}
+                        <td style="padding:8px;">
+                            {{ row.values_by_field_id|get_item:field.id|default:"-" }}
+                        </td>
+                    {% endfor %}
+                    <td style="padding:8px;">
+                        <a href="{% url 'events:registration_edit' event.public_id row.registration.id %}">Edit</a>
+                        <form method="post" action="{% url 'events:registration_delete' event.public_id row.registration.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button class="btn btn-secondary" type="submit" onclick="return confirm('Delete this registration?');">Delete</button>
+                        </form>
+                    </td>
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="5" style="padding:8px;">No registrations yet.</td>
+                    <td colspan="{{ colspan }}" style="padding:8px;">
+                        No registrations yet.
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

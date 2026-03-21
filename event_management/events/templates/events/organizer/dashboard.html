@@ -18,6 +18,7 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <a class="btn" href="{% url 'events:event_manage' event.public_id %}">Manage</a>
                 <a class="btn btn-secondary" href="{% url 'events:registrations_list' event.public_id %}">Registrations</a>
+                <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}">Check-in</a>
             </div>
         </article>
     {% empty %}

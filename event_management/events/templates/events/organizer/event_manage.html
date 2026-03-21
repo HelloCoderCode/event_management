@@ -22,6 +22,9 @@
     <a class="btn btn-secondary" href="{% url 'events:toggle_event_status' event.public_id %}">
         {% if event.registrations_closed %}Activate Event{% else %}Deactivate Event{% endif %}
     </a>
+    <a class="btn btn-secondary" href="{% url 'events:delete_event_confirm' event.public_id %}">
+        Delete Event
+    </a>
     <a class="btn btn-secondary" href="{% url 'events:organizer_dashboard' %}">Back to Dashboard</a>
 </section>
 

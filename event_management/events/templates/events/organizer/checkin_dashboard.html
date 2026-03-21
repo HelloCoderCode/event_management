@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Check-in Dashboard{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Check-in: {{ event.title }}</h1>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="btn" href="{% url 'events:checkin_scan' event.public_id %}">Open QR Scanner</a>
+        <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}?status=all">All</a>
+        <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}?status=checked_in">Checked In</a>
+        <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}?status=not_checked_in">Not Checked In</a>
+        <a class="btn btn-secondary" href="{% url 'events:organizer_dashboard' %}">Back</a>
+    </div>
+</section>
+
+<section class="card">
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Name</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Email</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Booking ID</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Status</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reg in registrations %}
+                <tr>
+                    <td style="padding:8px;">{{ reg.name }}</td>
+                    <td style="padding:8px;">{{ reg.email }}</td>
+                    <td style="padding:8px;">{{ reg.booking_id }}</td>
+                    <td style="padding:8px;">
+                        {% if reg.checked_in %}
+                            Checked In
+                        {% else %}
+                            Not Checked In
+                        {% endif %}
+                    </td>
+                    <td style="padding:8px;">
+                        {% if reg.checked_in %}
+                            -
+                        {% else %}
+                            <form method="post" action="{% url 'events:checkin_confirm' event.public_id reg.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button class="btn btn-secondary" type="submit">Check In</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="padding:8px;">No registrations found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
