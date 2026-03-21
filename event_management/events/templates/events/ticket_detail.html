@@ -513,15 +513,13 @@
           </svg>
           Share
         </button>
-        <button class="tk-icon-btn" onclick="window.print()">
+        <a class="tk-icon-btn" href="{% url 'events:ticket_pdf' registration.booking_id %}">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M4 5V2h8v3"/>
-            <rect x="2" y="5" width="12" height="7" rx="1.5"/>
-            <path d="M4 12v2h8v-2"/>
-            <circle cx="12.5" cy="8.5" r=".75" fill="currentColor"/>
+            <path d="M8 2v8M5 7l3 3 3-3"/>
+            <path d="M3 13h10" stroke-linecap="round"/>
           </svg>
-          Print
-        </button>
+          Download PDF
+        </a>
       </div>
     </div>
 

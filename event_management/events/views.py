@@ -276,17 +276,90 @@ def ticket_pdf(request, booking_id):
     response["Content-Disposition"] = f'attachment; filename="ticket-{booking_id}.pdf"'
 
     pdf = canvas.Canvas(response, pagesize=letter)
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(72, 750, "Event Ticket")
-    pdf.setFont("Helvetica", 12)
-    pdf.drawString(72, 720, f"Booking ID: {registration.booking_id}")
-    pdf.drawString(72, 700, f"Name: {registration.name}")
-    pdf.drawString(72, 680, f"Email: {registration.email}")
-    pdf.drawString(72, 660, f"Event: {registration.event.title}")
-    pdf.drawString(72, 640, f"Ticket Type: {registration.ticket_type.name}")
-    pdf.drawString(72, 620, f"Quantity: {registration.quantity}")
+    width, height = letter
+    margin = 54
+    card_x = margin
+    card_y = 120
+    card_w = width - margin * 2
+    card_h = height - 200
 
-    pdf.drawImage(ImageReader(img_buffer), 72, 500, width=120, height=120)
+    # Card background
+    pdf.setFillColorRGB(1, 1, 1)
+    pdf.roundRect(card_x, card_y, card_w, card_h, 12, stroke=0, fill=1)
+    pdf.setStrokeColorRGB(0.86, 0.86, 0.86)
+    pdf.roundRect(card_x, card_y, card_w, card_h, 12, stroke=1, fill=0)
+
+    # Accent bar
+    pdf.setFillColorRGB(0.0, 0.44, 0.89)
+    pdf.rect(card_x, card_y + card_h - 6, card_w, 6, stroke=0, fill=1)
+
+    # Dark header band
+    header_h = 120
+    pdf.setFillColorRGB(0.1, 0.1, 0.12)
+    pdf.rect(card_x, card_y + card_h - 6 - header_h, card_w, header_h, stroke=0, fill=1)
+
+    # Header text
+    pdf.setFillColorRGB(1, 1, 1)
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(card_x + 20, card_y + card_h - 6 - 24, "EVENT TICKET")
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(card_x + 20, card_y + card_h - 6 - 48, registration.event.title)
+    pdf.setFont("Helvetica", 10)
+    pdf.setFillColorRGB(0.8, 0.8, 0.8)
+    pdf.drawString(
+        card_x + 20,
+        card_y + card_h - 6 - 70,
+        f"{registration.event.start_date} {registration.event.start_time} · {registration.event.location}",
+    )
+
+    # Ticket badge
+    pdf.setFillColorRGB(0.25, 0.25, 0.28)
+    badge_w = 150
+    badge_h = 22
+    badge_x = card_x + card_w - badge_w - 20
+    badge_y = card_y + card_h - 6 - 60
+    pdf.roundRect(badge_x, badge_y, badge_w, badge_h, 10, stroke=0, fill=1)
+    pdf.setFillColorRGB(1, 1, 1)
+    pdf.setFont("Helvetica", 9)
+    pdf.drawCentredString(
+        badge_x + badge_w / 2,
+        badge_y + 7,
+        f"{registration.ticket_type.name} x {registration.quantity}",
+    )
+
+    # Body section
+    body_top = card_y + card_h - 6 - header_h - 20
+    left_x = card_x + 20
+    right_x = card_x + card_w - 160
+
+    pdf.setFillColorRGB(0.1, 0.1, 0.12)
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(left_x, body_top, "BOOKING ID")
+    pdf.setFillColorRGB(0.0, 0.44, 0.89)
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left_x, body_top - 16, registration.booking_id)
+
+    pdf.setFillColorRGB(0.1, 0.1, 0.12)
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left_x, body_top - 40, f"Name: {registration.name}")
+    pdf.drawString(left_x, body_top - 56, f"Email: {registration.email}")
+    pdf.drawString(left_x, body_top - 72, f"Phone: {registration.phone}")
+
+    # QR code
+    pdf.setFillColorRGB(1, 1, 1)
+    pdf.setStrokeColorRGB(0.85, 0.85, 0.85)
+    pdf.roundRect(right_x - 10, body_top - 120, 140, 140, 10, stroke=1, fill=1)
+    pdf.drawImage(ImageReader(img_buffer), right_x, body_top - 110, width=120, height=120)
+
+    # Footer note
+    pdf.setFillColorRGB(0.4, 0.4, 0.45)
+    pdf.setFont("Helvetica", 9)
+    pdf.drawString(
+        card_x + 20,
+        card_y + 20,
+        "Show this ticket or QR code at entry. Keep this PDF for offline access.",
+    )
+
     pdf.showPage()
     pdf.save()
     return response

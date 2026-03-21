@@ -28,6 +28,11 @@ class EventForm(forms.ModelForm):
             "registration_deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = True
+
 
 class TicketTypeForm(forms.ModelForm):
     class Meta:
