@@ -3,22 +3,18 @@
 {% block content %}
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,400&display=swap');
-
-  :root {
-    --serif: 'Instrument Serif', Georgia, serif;
-    --sans:  'Instrument Sans', -apple-system, sans-serif;
-  }
+ 
 
   /* ── PAGE LAYOUT ───────────────────────────────────────── */
   .ed-wrap {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 28px;
-    padding-top: 40px;
-    align-items: start;
-  }
-
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+  align-items: start;
+}
   /* ── BREADCRUMB ─────────────────────────────────────────── */
   .ed-breadcrumb {
     display: flex;

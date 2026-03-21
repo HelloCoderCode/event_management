@@ -2,456 +2,443 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Event Management{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Eventify — Discover Amazing Events{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root{
-            --bg:#f5f5f7;
-            --bg2:#fff;
-            --glass:rgba(255,255,255,0.72);
-            --t1:#1d1d1f;
-            --t2:#6e6e73;
-            --t3:#aeaeb2;
-            --accent:#0071e3;
-            --accent-h:#0077ed;
-            --accent-l:rgba(0,113,227,.10);
-            --success:#34c759;
-            --warn:#ff9f0a;
-            --danger:#ff3b30;
-            --info:#5ac8fa;
-            --bd:rgba(0,0,0,.08);
-            --bd2:rgba(0,0,0,.14);
-            --s-xs:0 1px 2px rgba(0,0,0,.04);
-            --s-sm:0 2px 8px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
-            --s-md:0 4px 16px rgba(0,0,0,.09),0 2px 4px rgba(0,0,0,.05);
-            --s-lg:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
-            --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-xl:24px;--r-f:9999px;
-            --font:-apple-system,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
-        }
+    :root {
+      --bg:       #fafaf9;
+      --bg2:      #ffffff;
+      --bg3:      #f3f2ef;
+      --glass:    rgba(250,250,249,0.82);
+      --t1:       #111110;
+      --t2:       #57534e;
+      --t3:       #a8a29e;
+      --accent:   #7c3aed;
+      --accent2:  #f97316;
+      --accent-h: #6d28d9;
+      --accent-l: rgba(124,58,237,.08);
+      --success:  #16a34a;
+      --warn:     #d97706;
+      --danger:   #dc2626;
+      --bd:       rgba(0,0,0,.07);
+      --bd2:      rgba(0,0,0,.12);
+      --s-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --s-md: 0 4px 16px rgba(0,0,0,.09), 0 2px 4px rgba(0,0,0,.04);
+      --s-lg: 0 10px 40px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.05);
+      --s-xl: 0 20px 60px rgba(0,0,0,.15), 0 8px 16px rgba(0,0,0,.06);
+      --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 24px; --r-2xl: 32px; --r-f: 9999px;
+      --sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --serif: 'Fraunces', Georgia, serif;
+    }
 
-        html{
-            font-family:var(--font);
-            background:var(--bg);
-            color:var(--t1);
-            -webkit-font-smoothing:antialiased;
-            font-size:16px;
-        }
+    html {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--t1);
+      -webkit-font-smoothing: antialiased;
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
 
-        body{
-            min-height:100vh;
-            display:flex;
-            flex-direction:column;
-            overflow-x:hidden;
-        }
+    body { min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
 
-        a{ color:inherit; text-decoration:none; }
+    /* ── NAVBAR ─────────────────────────────────────────────── */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--glass);
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      border-bottom: 1px solid var(--bd);
+    }
 
-        /* ── NAVBAR — exact from reference ─────────────────────────── */
-        .site-header{
-            position:sticky;
-            top:0;
-            z-index:100;
-            height:52px;
-            background:var(--glass);
-            backdrop-filter:saturate(180%) blur(20px);
-            -webkit-backdrop-filter:saturate(180%) blur(20px);
-            border-bottom:1px solid var(--bd);
-        }
+    .header-inner {
+      width: 100%;
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-direction: row; flex-wrap: nowrap;
+      gap: 0;
+    }
 
-        .header-inner{
-            max-width:1120px;
-            margin:0 auto;
-            padding:0 24px;
-            height:100%;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-        }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--sans); font-size: 18px; font-weight: 700;
+      letter-spacing: -.4px; color: var(--t1);
+      flex-shrink: 0; min-width: 0;
+    }
 
-        /* Logo */
-        .logo{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            text-decoration:none;
-            color:var(--t1);
-            font-size:17px;
-            font-weight:600;
-            letter-spacing:-.4px;
-        }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 9px;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
 
-        .logo-icon{
-            width:26px;
-            height:26px;
-            background:var(--t1);
-            border-radius:7px;
-            display:grid;
-            place-items:center;
-            flex-shrink:0;
-        }
+    .logo-icon svg { flex-shrink: 0; }
 
-        /* Nav links */
-        .site-header nav{
-            display:flex;
-            align-items:center;
-            gap:4px;
-        }
+    .logo span { color: var(--accent); }
 
-        .site-header nav a{
-            text-decoration:none;
-            color:var(--t2);
-            font-size:13.5px;
-            font-weight:450;
-            padding:5px 11px;
-            border-radius:var(--r-f);
-            transition:.15s;
-            white-space:nowrap;
-        }
+    .site-header nav {
+      display: flex; align-items: center; gap: 2px;
+      flex-shrink: 0; margin-left: auto;
+    }
 
-        .site-header nav a:hover{
-            color:var(--t1);
-            background:rgba(0,0,0,.04);
-        }
+    .site-header nav a {
+      color: var(--t2); font-size: 14px; font-weight: 500;
+      padding: 6px 14px; border-radius: var(--r-f);
+      transition: .15s; white-space: nowrap;
+    }
 
-        .site-header nav a.nav-cta{
-            background:var(--accent);
-            color:#fff;
-            font-weight:500;
-            display:inline-flex;
-            align-items:center;
-            gap:6px;
-        }
+    .site-header nav a:hover { color: var(--t1); background: rgba(0,0,0,.05); }
 
-        .site-header nav a.nav-cta:hover{
-            background:var(--accent-h);
-        }
+    .nav-cta {
+      background: var(--accent) !important;
+      color: #fff !important; font-weight: 600 !important;
+      padding: 7px 18px !important;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
 
-        /* Hamburger */
-        .nav-ham{
-            display:none;
-            flex-direction:column;
-            gap:5px;
-            padding:7px;
-            border:none;
-            background:none;
-            cursor:pointer;
-            border-radius:var(--r-sm);
-            transition:.15s;
-        }
-        .nav-ham:hover{ background:rgba(0,0,0,.05); }
-        .nav-ham span{
-            display:block;width:20px;height:1.5px;
-            background:var(--t1);border-radius:2px;
-            transition:.2s;
-        }
-        .nav-ham.open span:nth-child(1){ transform:rotate(45deg) translate(4.7px,4.7px); }
-        .nav-ham.open span:nth-child(2){ opacity:0;transform:scaleX(0); }
-        .nav-ham.open span:nth-child(3){ transform:rotate(-45deg) translate(4.7px,-4.7px); }
+    .nav-cta:hover { background: var(--accent-h) !important; }
 
-        /* Mobile drawer — same glass as nav */
-        .nav-drawer{
-            display:none;
-            position:fixed;
-            inset:52px 0 0 0;
-            background:rgba(245,245,247,.94);
-            backdrop-filter:saturate(180%) blur(20px);
-            -webkit-backdrop-filter:saturate(180%) blur(20px);
-            z-index:90;
-            padding:16px;
-            flex-direction:column;
-            gap:3px;
-            opacity:0;
-            transform:translateY(-6px);
-            transition:opacity .2s,transform .2s;
-            pointer-events:none;
-            border-bottom:1px solid var(--bd);
-        }
-        .nav-drawer.open{
-            display:flex;
-            opacity:1;
-            transform:translateY(0);
-            pointer-events:all;
-        }
-        .nav-drawer a{
-            display:flex;align-items:center;
-            padding:12px 14px;
-            font-size:15px;font-weight:500;
-            color:var(--t1);
-            border-radius:var(--r-md);
-            transition:.15s;
-            text-decoration:none;
-        }
-        .nav-drawer a:hover{ background:rgba(0,0,0,.04); }
-        .nav-drawer hr{ border:none;border-top:1px solid var(--bd);margin:6px 2px; }
+    .nav-login {
+      border: 1.5px solid var(--bd2) !important;
+      color: var(--t1) !important;
+    }
 
-        /* ── MAIN ─────────────────────────────────────────────────── */
-        main.container{
-            flex:1;
-            width:100%;
-            margin:0 auto;
-            padding:0 24px 80px;
-            width:100%;
-            animation:fadeUp .45s cubic-bezier(.22,1,.36,1) both;
-        }
+    .nav-login:hover { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--accent-l) !important; }
 
-        @keyframes fadeUp{
-            from{opacity:0;transform:translateY(14px)}
-            to{opacity:1;transform:none}
-        }
+    /* Hamburger */
+    .nav-ham {
+      display: none; flex-direction: column; gap: 5px;
+      padding: 8px; border: none; background: none; cursor: pointer;
+      border-radius: var(--r-sm); transition: .15s;
+      flex-shrink: 0; margin-left: auto;
+    }
+    .nav-ham:hover { background: rgba(0,0,0,.05); }
+    .nav-ham span { display: block; width: 20px; height: 2px; background: var(--t1); border-radius: 2px; transition: .2s; }
+    .nav-ham.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .nav-ham.open span:nth-child(2) { opacity: 0; }
+    .nav-ham.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
 
-        /* ── TOASTS — exact from reference ──────────────────────────── */
-        .messages{
-            position:fixed;
-            top:68px;
-            right:20px;
-            display:flex;
-            flex-direction:column;
-            gap:10px;
-            z-index:9000;
-            pointer-events:none;
-        }
+    /* Mobile drawer */
+    .nav-drawer {
+      display: none; position: fixed; inset: 60px 0 0 0;
+      background: rgba(250,250,249,.96);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      z-index: 90; padding: 16px 20px;
+      flex-direction: column; gap: 4px;
+      border-bottom: 1px solid var(--bd);
+    }
+    .nav-drawer.open { display: flex; }
+    .nav-drawer a {
+      display: flex; align-items: center;
+      padding: 14px 16px; font-size: 15px; font-weight: 500;
+      color: var(--t1); border-radius: var(--r-lg); transition: .15s;
+    }
+    .nav-drawer a:hover { background: rgba(0,0,0,.04); }
+    .nav-drawer hr { border: none; border-top: 1px solid var(--bd); margin: 6px 0; }
+    .nav-drawer .drawer-cta {
+      background: var(--accent); color: #fff !important; justify-content: center;
+      margin-top: 8px; font-weight: 600;
+    }
 
-        .message{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            padding:12px 16px;
-            background:var(--glass);
-            backdrop-filter:blur(20px) saturate(180%);
-            -webkit-backdrop-filter:blur(20px) saturate(180%);
-            border:1px solid var(--bd2);
-            border-radius:var(--r-md);
-            box-shadow:var(--s-lg);
-            font-size:13px;
-            max-width:300px;
-            color:var(--t1);
-            pointer-events:all;
-            animation:toastIn .35s cubic-bezier(.34,1.56,.64,1);
-        }
+    /* ── MAIN ─────────────────────────────────────────────────── */
+    main {
+      flex: 1; width: 100%;
+      animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+    }
 
-        @keyframes toastIn{
-            from{opacity:0;transform:translateX(16px) scale(.95)}
-            to{opacity:1;transform:none}
-        }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: none; }
+    }
 
-        .message::before{
-            content:'';
-            width:7px;height:7px;
-            border-radius:50%;
-            flex-shrink:0;
-            background:var(--t3);
-        }
-        .message.success::before{ background:var(--success); }
-        .message.error::before  { background:var(--danger); }
-        .message.warning::before{ background:var(--warn); }
-        .message.info::before   { background:var(--info); }
+    /* ── TOASTS ──────────────────────────────────────────────── */
+    .messages {
+      position: fixed; top: 74px; right: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      z-index: 9000; pointer-events: none;
+    }
 
-        /* ── FOOTER ───────────────────────────────────────────────── */
-        .site-footer{
-            border-top:1px solid var(--bd);
-            background:var(--bg);
-            padding:18px 0;
-        }
+    .message {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 18px;
+      background: var(--bg2);
+      border: 1px solid var(--bd2);
+      border-radius: var(--r-lg);
+      box-shadow: var(--s-lg);
+      font-size: 13.5px; font-weight: 500;
+      max-width: 320px; color: var(--t1);
+      pointer-events: all;
+      animation: toastIn .35s cubic-bezier(.34,1.56,.64,1);
+    }
 
-        .site-footer .container{
-            max-width:1120px;
-            margin:0 auto;
-            padding:0 24px;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            flex-wrap:wrap;
-            gap:12px;
-        }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(20px) scale(.94); }
+      to   { opacity: 1; transform: none; }
+    }
 
-        .site-footer span{
-            font-size:12px;
-            color:var(--t3);
-        }
+    .message::before {
+      content: ''; width: 8px; height: 8px;
+      border-radius: 50%; flex-shrink: 0; background: var(--t3);
+    }
+    .message.success::before { background: var(--success); }
+    .message.error::before   { background: var(--danger); }
+    .message.warning::before { background: var(--warn); }
 
-        .footer-links{
-            display:flex;
-            gap:20px;
-        }
+    /* ── FOOTER ───────────────────────────────────────────────── */
+    .site-footer {
+      background: var(--t1); color: rgba(255,255,255,.9);
+      padding: 60px 0 0;
+    }
 
-        .footer-links a{
-            font-size:12px;
-            color:var(--t3);
-            text-decoration:none;
-            transition:.15s;
-        }
+    .footer-grid {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px; padding-bottom: 48px;
+    }
 
-        .footer-links a:hover{ color:var(--t2); }
+    .footer-brand .logo { color: #fff; margin-bottom: 16px; }
+    .footer-brand .logo-icon { background: linear-gradient(135deg, var(--accent), #a855f7); }
+    .footer-brand p {
+      font-size: 14px; line-height: 1.7; color: rgba(255,255,255,.5);
+      max-width: 280px; font-weight: 300;
+    }
 
-        /* ── RESPONSIVE ───────────────────────────────────────────── */
-        @media(max-width:640px){
-            .site-header nav{ display:none; }
-            .nav-ham{ display:flex; }
-            .header-inner{ padding:0 16px; }
-            main.container{ padding:0 16px 60px; }
-            .messages{ right:12px; top:62px; }
-        }
+    .footer-social { display: flex; gap: 10px; margin-top: 20px; }
+    .footer-social a {
+      width: 34px; height: 34px;
+      border-radius: var(--r-sm);
+      background: rgba(255,255,255,.1);
+      display: grid; place-items: center;
+      color: rgba(255,255,255,.6);
+      font-size: 13px; font-weight: 600;
+      transition: .15s;
+    }
+    .footer-social a:hover { background: var(--accent); color: #fff; }
 
-        /* ── SCROLLBAR & SELECTION ────────────────────────────────── */
-        ::-webkit-scrollbar{width:5px;height:5px;}
-        ::-webkit-scrollbar-track{background:transparent;}
-        ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:99px;}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);}
-        ::selection{background:var(--accent);color:#fff;}
-        :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
-    </style>
+    .footer-col h4 {
+      font-size: 12px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.4);
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a {
+      font-size: 14px; color: rgba(255,255,255,.6); transition: .15s;
+    }
+    .footer-col ul li a:hover { color: #fff; }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 20px 24px;
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom span { font-size: 13px; color: rgba(255,255,255,.3); }
+    .footer-bottom-links { display: flex; gap: 20px; }
+    .footer-bottom-links a { font-size: 13px; color: rgba(255,255,255,.3); transition: .15s; }
+    .footer-bottom-links a:hover { color: rgba(255,255,255,.7); }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .site-header nav { display: none !important; }
+      .nav-ham { display: flex !important; margin-left: auto; }
+      .messages { right: 12px; top: 70px; max-width: calc(100vw - 24px); }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .footer-brand { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 480px) {
+      .header-inner { padding: 0 16px; }
+      /* Force logo left, hamburger right — never center */
+      .logo { flex-shrink: 0; margin-right: 0; }
+      .nav-ham { margin-left: auto; flex-shrink: 0; }
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── SCROLLBAR ────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 99px; }
+    ::selection { background: var(--accent); color: #fff; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  </style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <header class="site-header">
-        <div class="header-inner">
-
-            <a class="logo" href="{% url 'events:home' %}">
-                <div class="logo-icon">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <rect x="1" y="1" width="5" height="5" rx="1.5" fill="white"/>
-                        <rect x="8" y="1" width="5" height="5" rx="1.5" fill="white" opacity=".7"/>
-                        <rect x="1" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".5"/>
-                        <rect x="8" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".9"/>
-                    </svg>
-                </div>
-                EventManagemnt
-            </a>
-
-            <!-- Desktop — exact original links -->
-            <nav>
-                <a href="{% url 'events:home' %}">Events</a>
-                <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
-                {% if user.is_authenticated %}
-                    <a href="#" class="nav-cta" id="logout-link">
-                        Logout
-                    </a>
-                    <form method="post" action="{% url 'users:logout' %}" id="logout-form" style="display:none;">
-                        {% csrf_token %}
-                    </form>
-                {% else %}
-                    <a href="{% url 'users:login' %}">Login</a>
-                    <a href="{% url 'users:register' %}" class="nav-cta">
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                            <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                        Register
-                    </a>
-                {% endif %}
-            </nav>
-
-            <!-- Mobile hamburger -->
-            <button class="nav-ham" id="nav-ham" aria-label="Open menu" aria-expanded="false">
-                <span></span><span></span><span></span>
-            </button>
-
+  <!-- NAVBAR -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="{% url 'events:home' %}">
+        <div class="logo-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h4v4H3zM9 2h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" fill="white" opacity=".9"/>
+          </svg>
         </div>
-    </header>
+        Eventify
+      </a>
 
-    <!-- Mobile drawer -->
-    <nav class="nav-drawer" id="nav-drawer" aria-hidden="true">
-        <a href="{% url 'events:home' %}">Events</a>
+      <nav>
+                <a href="{% url 'events:home' %}">Home</a>
+
+        <a href="{% url 'events:home' %}#events">Events</a>
         <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
-        <hr>
         {% if user.is_authenticated %}
-            <a href="#" id="logout-link-drawer">Logout</a>
+          <a href="#" class="nav-cta" id="logout-link" style="border-radius:9999px">Logout</a>
+          <form method="post" action="{% url 'users:logout' %}" id="logout-form" style="display:none">{% csrf_token %}</form>
         {% else %}
-            <a href="{% url 'users:login' %}">Login</a>
-            <a href="{% url 'users:register' %}">Register</a>
+          <!-- <a href="{% url 'users:login' %}" class="nav-login" style="border-radius:9999px">Login</a> -->
+          <a href="{% url 'users:register' %}" class="nav-cta" style="border-radius:9999px">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Register Free
+          </a>
         {% endif %}
-    </nav>
+      </nav>
 
-    <!-- MAIN -->
-    <main class="container">
+      <button class="nav-ham" id="nav-ham" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
 
-        {% if messages %}
-            <div class="messages" role="alert" aria-live="polite">
-                {% for message in messages %}
-                    <div class="message {{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
+  <nav class="nav-drawer" id="nav-drawer">
+    <a href="{% url 'events:home' %}#events">Events</a>
+    <a href="{% url 'events:organizer_dashboard' %}">Organizer Dashboard</a>
+    <hr>
+    {% if user.is_authenticated %}
+      <a href="#" id="logout-link-drawer">Logout</a>
+    {% else %}
+      <a href="{% url 'users:login' %}">Login</a>
+      <a href="{% url 'users:register' %}" class="drawer-cta">Register Free</a>
+    {% endif %}
+  </nav>
 
-        {% block content %}{% endblock %}
+  <!-- MAIN -->
+  <main>
+    {% if messages %}
+      <div class="messages" role="alert" aria-live="polite">
+        {% for message in messages %}
+          <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
 
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-        <div class="container">
-            <span>Built with Django</span>
-            <div class="footer-links">
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Support</a>
-            </div>
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="{% url 'events:home' %}">
+          <div class="logo-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 2h4v4H3zM9 2h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" fill="white" opacity=".9"/>
+            </svg>
+          </div>
+          Eventify
+        </a>
+        <p>Your all-in-one platform for discovering, creating, and managing unforgettable events. From intimate gatherings to large-scale conferences.</p>
+        <div class="footer-social">
+          <a href="#">𝕏</a>
+          <a href="#">in</a>
+          <a href="#">fb</a>
+          <a href="#">ig</a>
         </div>
-    </footer>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#">Browse Events</a></li>
+          <li><a href="#">Create Event</a></li>
+          <li><a href="#">Organizer Tools</a></li>
+          <li><a href="#">Ticketing</a></li>
+          <li><a href="#">Analytics</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Press</a></li>
+          <li><a href="#">Partners</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Refund Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div style="max-width:1200px;margin:0 auto">
+      <div class="footer-bottom">
+        <span>© 2025 Eventify. All rights reserved. Built with Django.</span>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-    <script src="{% static 'js/app.js' %}"></script>
-    <script>
-        /* Mobile drawer */
-        const ham    = document.getElementById('nav-ham');
-        const drawer = document.getElementById('nav-drawer');
+  <script src="{% static 'js/app.js' %}"></script>
+  <script>
+    const ham = document.getElementById('nav-ham');
+    const drawer = document.getElementById('nav-drawer');
 
-        ham.addEventListener('click', () => {
-            const open = drawer.classList.toggle('open');
-            ham.classList.toggle('open', open);
-            ham.setAttribute('aria-expanded', open);
-            drawer.setAttribute('aria-hidden', !open);
-            document.body.style.overflow = open ? 'hidden' : '';
-        });
+    ham.addEventListener('click', () => {
+      const open = drawer.classList.toggle('open');
+      ham.classList.toggle('open', open);
+      ham.setAttribute('aria-expanded', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    });
 
-        drawer.querySelectorAll('a').forEach(a => {
-            a.addEventListener('click', () => {
-                drawer.classList.remove('open');
-                ham.classList.remove('open');
-                ham.setAttribute('aria-expanded', 'false');
-                drawer.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = '';
-            });
-        });
+    drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      drawer.classList.remove('open');
+      ham.classList.remove('open');
+      document.body.style.overflow = '';
+    }));
 
-        /* Active nav highlight */
-        document.querySelectorAll('.site-header nav a, .nav-drawer a').forEach(a => {
-            if (a.getAttribute('href') === location.pathname) {
-                a.style.color = 'var(--t1)';
-                a.style.background = 'rgba(0,0,0,.05)';
-            }
-        });
+    /* Active nav */
+    document.querySelectorAll('.site-header nav a, .nav-drawer a').forEach(a => {
+      if (a.href === location.href) a.style.color = 'var(--t1)';
+    });
 
-        /* Auto-dismiss toasts after 4s */
+    /* Auto-dismiss toasts */
+    setTimeout(() => {
+      document.querySelectorAll('.message').forEach((t, i) => {
         setTimeout(() => {
-            document.querySelectorAll('.message').forEach((t, i) => {
-                setTimeout(() => {
-                    t.style.transition = '.3s';
-                    t.style.opacity = '0';
-                    t.style.transform = 'translateX(12px) scale(.96)';
-                    setTimeout(() => t.remove(), 300);
-                }, i * 200);
-            });
-        }, 4000);
+          t.style.transition = '.3s';
+          t.style.opacity = '0';
+          t.style.transform = 'translateX(12px) scale(.96)';
+          setTimeout(() => t.remove(), 300);
+        }, i * 150);
+      });
+    }, 4500);
 
-        const logoutLink = document.getElementById('logout-link');
-        const logoutForm = document.getElementById('logout-form');
-        if (logoutLink && logoutForm) {
-            logoutLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                logoutForm.submit();
-            });
-        }
-        const logoutLinkDrawer = document.getElementById('logout-link-drawer');
-        if (logoutLinkDrawer && logoutForm) {
-            logoutLinkDrawer.addEventListener('click', (e) => {
-                e.preventDefault();
-                logoutForm.submit();
-            });
-        }
-    </script>
+    /* Logout */
+    const lf = document.getElementById('logout-form');
+    ['logout-link','logout-link-drawer'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && lf) el.addEventListener('click', e => { e.preventDefault(); lf.submit(); });
+    });
+  </script>
 </body>
 </html>
