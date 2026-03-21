@@ -168,4 +168,4 @@ Developed by SoftwareTechnology-Hub
 
 ---
 
-✨ Happy Coding!
+ Happy Coding!
