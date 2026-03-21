@@ -1,33 +1,514 @@
 {% extends "base.html" %}
-{% block title %}Register - {{ event.title }}{% endblock %}
+{% block title %}Register — {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Register for {{ event.title }}</h1>
-    <div class="ticket-summary">
-        <div><strong>Ticket:</strong> {{ selected_ticket.name }}</div>
-        <div><strong>Quantity:</strong> {{ selected_quantity }}</div>
-        <div><strong>Price:</strong> INR {{ selected_ticket.price }}</div>
-    </div>
-</section>
 
-<section class="card">
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── PAGE SHELL ─────────────────────────────────────────── */
+  .rg-wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-top: 40px;
+  }
+
+  /* Breadcrumb */
+  .rg-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--t3);
+    margin-bottom: 28px;
+  }
+
+  .rg-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .rg-breadcrumb a:hover { color: var(--t1); }
+
+  /* Page title */
+  .rg-page-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+
+  .rg-page-sub {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t3);
+    font-weight: 300;
+    margin-bottom: 32px;
+  }
+
+  /* ── ORDER SUMMARY CARD ─────────────────────────────────── */
+  .rg-summary {
+    background: var(--t1);
+    border-radius: var(--r-xl);
+    padding: 22px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rg-summary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 80% at 90% 50%, rgba(0,113,227,.4) 0%, transparent 65%),
+      radial-gradient(ellipse 35% 60% at 5% 50%,  rgba(52,199,89,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .rg-summary-items {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  .rg-sum-item { }
+
+  .rg-sum-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+    margin-bottom: 3px;
+  }
+
+  .rg-sum-val {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .rg-sum-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255,255,255,.15);
+    flex-shrink: 0;
+  }
+
+  .rg-sum-total {
+    position: relative;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .rg-sum-total-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+    margin-bottom: 3px;
+  }
+
+  .rg-sum-total-val {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    color: #fff;
+    letter-spacing: -.01em;
+    line-height: 1;
+  }
+
+  .rg-sum-total-val small {
+    font-family: var(--sans);
+    font-size: 11px;
+    vertical-align: super;
+    opacity: .6;
+    font-weight: 400;
+  }
+
+  /* ── FORM CARD ──────────────────────────────────────────── */
+  .rg-form-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .05s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rg-form-card-head {
+    padding: 20px 28px 18px;
+    border-bottom: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .rg-form-card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-sm);
+    background: var(--accent-l);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .rg-form-card-title {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--t1);
+  }
+
+  .rg-form-card-sub {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-top: 1px;
+  }
+
+  .rg-form-body {
+    padding: 28px 28px 8px;
+  }
+
+  /* Error banner */
+  .rg-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px 16px;
+    border-radius: var(--r-md);
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.2);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+    margin-bottom: 22px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .rg-error-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* Form fields grid */
+  .rg-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 20px;
+    margin-bottom: 8px;
+  }
+
+  .rg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rg-field.full { grid-column: 1 / -1; }
+
+  .rg-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--t2);
+    letter-spacing: .01em;
+  }
+
+  .rg-label .rg-required {
+    color: var(--danger);
+    margin-left: 2px;
+  }
+
+  /* Style all Django-rendered inputs */
+  .rg-form-body input[type="text"],
+  .rg-form-body input[type="email"],
+  .rg-form-body input[type="tel"],
+  .rg-form-body input[type="number"],
+  .rg-form-body input[type="date"],
+  .rg-form-body input[type="url"],
+  .rg-form-body input[type="password"],
+  .rg-form-body select,
+  .rg-form-body textarea {
+    width: 100%;
+    padding: 9px 13px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .rg-form-body input[type="text"]:focus,
+  .rg-form-body input[type="email"]:focus,
+  .rg-form-body input[type="tel"]:focus,
+  .rg-form-body input[type="number"]:focus,
+  .rg-form-body input[type="date"]:focus,
+  .rg-form-body input[type="url"]:focus,
+  .rg-form-body input[type="password"]:focus,
+  .rg-form-body select:focus,
+  .rg-form-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+    background: var(--bg2);
+  }
+
+  .rg-form-body textarea {
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.6;
+  }
+
+  .rg-form-body select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23aeaeb2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  /* Field error */
+  .rg-field-error {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--danger);
+    font-weight: 500;
+  }
+
+  /* ── FORM FOOTER ────────────────────────────────────────── */
+  .rg-form-footer {
+    padding: 20px 28px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--bd);
+    margin-top: 20px;
+  }
+
+  .rg-trust {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+  }
+
+  .rg-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: var(--r-f);
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.35);
+  }
+
+  .rg-submit-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,113,227,.4);
+  }
+
+  .rg-submit-btn:active {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .rg-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 18px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .rg-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .rg-wrap { padding-top: 24px; }
+    .rg-fields { grid-template-columns: 1fr; }
+    .rg-field.full { grid-column: 1; }
+    .rg-form-body { padding: 20px 18px 8px; }
+    .rg-form-footer { padding: 16px 18px 22px; }
+    .rg-form-card-head { padding: 16px 18px; }
+    .rg-summary { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .rg-sum-total { text-align: left; }
+    .rg-sum-divider { width: 40px; height: 1px; }
+    .rg-form-footer { flex-direction: column-reverse; }
+    .rg-submit-btn, .rg-back-btn { width: 100%; justify-content: center; }
+  }
+</style>
+
+<div class="rg-wrap">
+
+  <!-- Breadcrumb -->
+  <div class="rg-breadcrumb">
+    <a href="{% url 'events:home' %}">Events</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+    <a href="{% url 'events:event_detail' event.slug %}">{{ event.title|truncatechars:32 }}</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+    <span>Register</span>
+  </div>
+
+  <h1 class="rg-page-title">Complete your registration</h1>
+  <p class="rg-page-sub">Fill in your details below to secure your spot at <em>{{ event.title }}</em>.</p>
+
+  <!-- Order summary bar -->
+  <div class="rg-summary">
+    <div class="rg-summary-items">
+      <div class="rg-sum-item">
+        <div class="rg-sum-label">Event</div>
+        <div class="rg-sum-val">{{ event.title|truncatechars:28 }}</div>
+      </div>
+      <div class="rg-sum-divider"></div>
+      <div class="rg-sum-item">
+        <div class="rg-sum-label">Ticket</div>
+        <div class="rg-sum-val">{{ selected_ticket.name }}</div>
+      </div>
+      <div class="rg-sum-divider"></div>
+      <div class="rg-sum-item">
+        <div class="rg-sum-label">Quantity</div>
+        <div class="rg-sum-val">× {{ selected_quantity }}</div>
+      </div>
+      <div class="rg-sum-divider"></div>
+      <div class="rg-sum-item">
+        <div class="rg-sum-label">Unit Price</div>
+        <div class="rg-sum-val">₹ {{ selected_ticket.price }}</div>
+      </div>
+    </div>
+    <div class="rg-sum-total">
+      <div class="rg-sum-total-label">Total</div>
+      <div class="rg-sum-total-val" id="rg-total">
+        <small>INR</small> {{ selected_ticket.price }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="rg-form-card">
+
+    <div class="rg-form-card-head">
+      <div class="rg-form-card-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+          <circle cx="8" cy="5" r="3"/>
+          <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="rg-form-card-title">Attendee Details</div>
+        <div class="rg-form-card-sub">All fields marked * are required</div>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div class="rg-form-body">
+
         {% if form.non_field_errors %}
-            <div class="message">{{ form.non_field_errors }}</div>
+          <div class="rg-error-banner">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+              <circle cx="8" cy="8" r="6.5"/>
+              <path d="M8 5v3.5M8 11h.01"/>
+            </svg>
+            <div>{{ form.non_field_errors }}</div>
+          </div>
         {% endif %}
 
-        {% for field in display_fields %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
+        <div class="rg-fields">
+          {% for field in display_fields %}
+            <div class="rg-field {% if field.field.widget.attrs.rows or field.html_name == 'message' or field.html_name == 'notes' or field.html_name == 'address' %}full{% endif %}">
+              <label class="rg-label" for="{{ field.id_for_label }}">
+                {{ field.label }}
+                {% if field.field.required %}<span class="rg-required">*</span>{% endif %}
+              </label>
+              {{ field }}
+              {% if field.errors %}
+                <span class="rg-field-error">{{ field.errors|join:", " }}</span>
+              {% endif %}
             </div>
-        {% endfor %}
+          {% endfor %}
+        </div>
 
+        {# Hidden fields — ticket type & quantity #}
         {{ form.ticket_type }}
         {{ form.quantity }}
 
-        <button class="btn" type="submit">Confirm Registration</button>
+      </div>
+
+      <div class="rg-form-footer">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <a class="rg-back-btn" href="{% url 'events:event_detail' event.slug %}">
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+            Back
+          </a>
+          <div class="rg-trust">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5L3 4v4.5C3 12 8 14.5 8 14.5S13 12 13 8.5V4L8 1.5Z"/><path d="M5.5 8l2 2 3-3"/></svg>
+            Secure &amp; encrypted
+          </div>
+        </div>
+        <button class="rg-submit-btn" type="submit">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h12M9 3l5 5-5 5"/></svg>
+          Confirm Registration
+        </button>
+      </div>
+
     </form>
-</section>
+  </div>
+
+</div>
+
+<script>
+  /* Compute total if price & qty are available */
+  (function() {
+    const price = parseFloat("{{ selected_ticket.price|default:0 }}");
+    const qty   = parseInt("{{ selected_quantity|default:1 }}");
+    const el    = document.getElementById('rg-total');
+    if (el && !isNaN(price) && !isNaN(qty)) {
+      el.innerHTML = '<small>INR</small> ' + (price * qty).toLocaleString('en-IN');
+    }
+  })();
+</script>
 {% endblock %}

@@ -1,103 +1,863 @@
 {% extends "base.html" %}
-{% block title %}QR Check-in{% endblock %}
+{% block title %}QR Scanner · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>QR Check-in: {{ event.title }}</h1>
-    <p>Use your camera to scan the QR code. After scan, attendee details will appear.</p>
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <button class="btn" id="start-scan">Start Camera</button>
-        <button class="btn btn-secondary" id="stop-scan">Stop Camera</button>
-        <a class="btn btn-secondary" href="{% url 'events:checkin_dashboard' event.public_id %}">Back</a>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── PAGE LAYOUT ────────────────────────────────────────────── */
+  .sc-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-top: 36px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────── */
+  .sc-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .sc-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 10px;
+  }
+
+  .sc-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .sc-breadcrumb a:hover { color: var(--t1); }
+
+  .sc-title {
+    font-family: var(--serif);
+    font-size: clamp(24px, 3.5vw, 36px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .sc-sub {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  .sc-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    text-decoration: none;
+    transition: .15s;
+    flex-shrink: 0;
+  }
+
+  .sc-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  /* ── MAIN GRID ───────────────────────────────────────────────── */
+  .sc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── SCANNER CARD ────────────────────────────────────────────── */
+  .sc-scanner-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .05s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .sc-card-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sc-card-icon {
+    width: 30px; height: 30px;
+    border-radius: var(--r-sm);
+    background: var(--accent-l);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .sc-card-title {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--t1);
+  }
+
+  /* Video viewport */
+  .sc-viewport {
+    position: relative;
+    background: #0a0a0a;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+
+  #sc-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Idle overlay */
+  .sc-idle-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #0f0f0f;
+    transition: opacity .3s;
+  }
+
+  .sc-idle-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .sc-idle-icon {
+    width: 64px; height: 64px;
+    border-radius: var(--r-xl);
+    background: rgba(255,255,255,.06);
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,.3);
+  }
+
+  .sc-idle-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: rgba(255,255,255,.35);
+    text-align: center;
+    padding: 0 24px;
+    line-height: 1.55;
+    font-weight: 300;
+  }
+
+  /* Scanning frame overlay */
+  .sc-frame-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+  }
+
+  .sc-frame-overlay.active { display: block; }
+
+  .sc-frame-corner {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-color: #fff;
+    border-style: solid;
+    opacity: .7;
+  }
+
+  .sc-frame-corner.tl { top: 20%; left: 20%; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .sc-frame-corner.tr { top: 20%; right: 20%; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .sc-frame-corner.bl { bottom: 20%; left: 20%; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .sc-frame-corner.br { bottom: 20%; right: 20%; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+  /* Scanning line */
+  .sc-scan-line {
+    position: absolute;
+    left: 20%; right: 20%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    top: 20%;
+    animation: scanLine 2s ease-in-out infinite;
+    display: none;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .sc-scan-line.active { display: block; }
+
+  @keyframes scanLine {
+    0%   { top: 20%; }
+    50%  { top: 80%; }
+    100% { top: 20%; }
+  }
+
+  /* Controls bar */
+  .sc-controls {
+    padding: 14px 18px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .sc-ctrl-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: .15s;
+  }
+
+  .sc-ctrl-btn.start {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .sc-ctrl-btn.start:hover {
+    background: var(--accent-h);
+    box-shadow: 0 4px 14px rgba(0,113,227,.38);
+    transform: translateY(-1px);
+  }
+
+  .sc-ctrl-btn.stop {
+    background: var(--bg);
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+  }
+
+  .sc-ctrl-btn.stop:hover { border-color: var(--danger); color: var(--danger); }
+  .sc-ctrl-btn:disabled { opacity: .38; cursor: not-allowed; transform: none !important; }
+
+  /* Status bar */
+  .sc-status-bar {
+    margin: 0 18px 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border-radius: var(--r-md);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .sc-status-bar.show { display: flex; }
+  .sc-status-bar.scanning  { background: var(--accent-l);      color: var(--accent);  border: 1px solid rgba(0,113,227,.18); }
+  .sc-status-bar.success   { background: rgba(52,199,89,.1);   color: var(--success); border: 1px solid rgba(52,199,89,.2); }
+  .sc-status-bar.error     { background: rgba(255,59,48,.07);  color: var(--danger);  border: 1px solid rgba(255,59,48,.18); }
+  .sc-status-bar.stopped   { background: rgba(0,0,0,.04);      color: var(--t3);      border: 1px solid var(--bd); }
+
+  .sc-status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .sc-status-bar:not(.scanning) .sc-status-dot { animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .3; }
+  }
+
+  /* Hidden canvas */
+  #sc-canvas { display: none; }
+
+  /* ── RESULT PANEL ────────────────────────────────────────────── */
+  .sc-result-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: fadeUp .45s .08s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  /* Error card */
+  .sc-error-card {
+    background: var(--bg2);
+    border: 1px solid rgba(255,59,48,.2);
+    border-radius: var(--r-xl);
+    padding: 20px 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: var(--s-xs);
+  }
+
+  .sc-error-icon {
+    width: 34px; height: 34px;
+    border-radius: var(--r-sm);
+    background: rgba(255,59,48,.1);
+    display: grid;
+    place-items: center;
+    color: var(--danger);
+    flex-shrink: 0;
+  }
+
+  .sc-error-title {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--danger);
+    margin-bottom: 3px;
+  }
+
+  .sc-error-msg {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t2);
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  /* Attendee card */
+  .sc-attendee-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-md);
+  }
+
+  .sc-att-head {
+    background: var(--t1);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sc-att-head::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 90% at 95% 50%, rgba(0,113,227,.4) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .sc-att-head-inner { position: relative; }
+
+  .sc-att-eyebrow {
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 8px;
+  }
+
+  .sc-att-name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sc-att-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.2);
+    display: grid;
+    place-items: center;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  .sc-att-name {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: #fff;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+  }
+
+  .sc-att-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  .sc-att-status-badge.in {
+    background: rgba(52,199,89,.2);
+    color: #30d158;
+    border: 1px solid rgba(52,199,89,.3);
+  }
+
+  .sc-att-status-badge.out {
+    background: rgba(255,255,255,.12);
+    color: rgba(255,255,255,.65);
+    border: 1px solid rgba(255,255,255,.15);
+  }
+
+  .sc-att-status-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Detail rows */
+  .sc-att-details {
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+  }
+
+  .sc-att-field {}
+
+  .sc-att-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 3px;
+  }
+
+  .sc-att-val {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--t1);
+  }
+
+  .sc-booking-chip {
+    font-family: 'SF Mono','Fira Code','Courier New',monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: .05em;
+    background: var(--accent-l);
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+    display: inline-block;
+  }
+
+  .sc-att-field.span2 { grid-column: 1 / -1; }
+
+  /* Action footer */
+  .sc-att-foot {
+    padding: 14px 22px 20px;
+    border-top: 1px solid var(--bd);
+  }
+
+  .sc-confirm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .sc-confirm-btn.checkin {
+    background: var(--success);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(52,199,89,.35);
+  }
+
+  .sc-confirm-btn.checkin:hover {
+    background: #2db74a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(52,199,89,.4);
+  }
+
+  .sc-confirm-btn.already {
+    background: var(--bg);
+    color: var(--t3);
+    border: 1.5px solid var(--bd2);
+    cursor: not-allowed;
+  }
+
+  /* Idle result state */
+  .sc-result-idle {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .sc-result-idle-icon {
+    width: 52px; height: 52px;
+    border-radius: var(--r-xl);
+    background: var(--bg);
+    border: 1.5px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+  }
+
+  .sc-result-idle h3 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--t1);
+  }
+
+  .sc-result-idle p {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    max-width: 220px;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────── */
+  @media (max-width: 720px) {
+    .sc-grid { grid-template-columns: 1fr; }
+    .sc-wrap { padding-top: 24px; }
+    .sc-att-details { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 420px) {
+    .sc-header { flex-direction: column; align-items: flex-start; }
+    .sc-back-btn { align-self: stretch; justify-content: center; }
+    .sc-att-details { grid-template-columns: 1fr; }
+    .sc-att-field.span2 { grid-column: 1; }
+  }
+</style>
+
+<div class="sc-wrap">
+
+  <!-- Header -->
+  <div class="sc-header">
+    <div>
+      <div class="sc-breadcrumb">
+        <a href="{% url 'events:organizer_dashboard' %}">Dashboard</a>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        <a href="{% url 'events:checkin_dashboard' event.public_id %}">Check-in</a>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+        <span>QR Scanner</span>
+      </div>
+      <h1 class="sc-title">QR Scanner</h1>
+      <p class="sc-sub">Point the camera at an attendee's ticket QR code.</p>
     </div>
-</section>
+    <a class="sc-back-btn" href="{% url 'events:checkin_dashboard' event.public_id %}">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+      Back to Dashboard
+    </a>
+  </div>
 
-<section class="card">
-    <video id="video" style="width:100%; max-width:520px; border-radius:12px; border:1px solid #e2ded5;" autoplay></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <div id="scan-status" class="message" style="display:none;"></div>
-</section>
+  <div class="sc-grid">
 
-{% if error %}
-    <section class="card">
-        <div class="message">{{ error }}</div>
-    </section>
-{% endif %}
+    <!-- ── SCANNER ──────────────────────────────────────────────── -->
+    <div class="sc-scanner-card">
 
-{% if registration %}
-    <section class="card">
-        <h2>Attendee Details</h2>
-        <p><strong>Name:</strong> {{ registration.name }}</p>
-        <p><strong>Email:</strong> {{ registration.email }}</p>
-        <p><strong>Phone:</strong> {{ registration.phone }}</p>
-        <p><strong>Booking ID:</strong> {{ registration.booking_id }}</p>
-        <p><strong>Ticket:</strong> {{ registration.ticket_type.name }} x {{ registration.quantity }}</p>
-        <form method="post" action="{% url 'events:checkin_confirm' event.public_id registration.id %}">
-            {% csrf_token %}
-            <button class="btn" type="submit">
-                {% if registration.checked_in %}Checked In{% else %}Check In{% endif %}
+      <div class="sc-card-head">
+        <div class="sc-card-icon">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M1 4V2a1 1 0 0 1 1-1h2M12 1h2a1 1 0 0 1 1 1v2M15 12v2a1 1 0 0 1-1 1h-2M4 15H2a1 1 0 0 1-1-1v-2"/>
+            <rect x="4" y="4" width="3" height="3" rx=".5"/>
+            <rect x="9" y="4" width="3" height="3" rx=".5"/>
+            <rect x="4" y="9" width="3" height="3" rx=".5"/>
+            <rect x="9" y="9" width="3" height="3" rx=".5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sc-card-title">Camera Scanner</div>
+        </div>
+      </div>
+
+      <!-- Video area -->
+      <div class="sc-viewport">
+        <video id="sc-video" autoplay playsinline muted></video>
+
+        <!-- Idle overlay -->
+        <div class="sc-idle-overlay" id="sc-idle">
+          <div class="sc-idle-icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M11 4H5a1 1 0 0 0-1 1v6M17 4h6a1 1 0 0 1 1 1v6M23 17v6a1 1 0 0 1-1 1h-6M5 17v6a1 1 0 0 0 1 1h6"/>
+              <rect x="9" y="9" width="10" height="10" rx="2"/>
+            </svg>
+          </div>
+          <p class="sc-idle-text">Camera is off.<br>Press Start to begin scanning.</p>
+        </div>
+
+        <!-- Frame corners -->
+        <div class="sc-frame-overlay" id="sc-frame">
+          <div class="sc-frame-corner tl"></div>
+          <div class="sc-frame-corner tr"></div>
+          <div class="sc-frame-corner bl"></div>
+          <div class="sc-frame-corner br"></div>
+        </div>
+
+        <!-- Scan line -->
+        <div class="sc-scan-line" id="sc-scanline"></div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="sc-status-bar" id="sc-status">
+        <div class="sc-status-dot"></div>
+        <span id="sc-status-text"></span>
+      </div>
+
+      <!-- Controls -->
+      <div class="sc-controls">
+        <button class="sc-ctrl-btn start" id="sc-start">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M6.5 5.5l5 2.5-5 2.5V5.5Z" fill="currentColor" stroke="none"/>
+          </svg>
+          Start Camera
+        </button>
+        <button class="sc-ctrl-btn stop" id="sc-stop" disabled>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="8" cy="8" r="6.5"/>
+            <rect x="5.5" y="5.5" width="5" height="5" rx="1" fill="currentColor" stroke="none"/>
+          </svg>
+          Stop
+        </button>
+      </div>
+
+      <canvas id="sc-canvas"></canvas>
+    </div>
+
+    <!-- ── RESULT PANEL ─────────────────────────────────────────── -->
+    <div class="sc-result-panel">
+
+      {% if error %}
+      <div class="sc-error-card">
+        <div class="sc-error-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M8 5v3.5M8 11h.01"/>
+          </svg>
+        </div>
+        <div>
+          <div class="sc-error-title">Check-in Failed</div>
+          <div class="sc-error-msg">{{ error }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if registration %}
+      <div class="sc-attendee-card">
+        <div class="sc-att-head">
+          <div class="sc-att-head-inner">
+            <div class="sc-att-eyebrow">Attendee Found</div>
+            <div class="sc-att-name-row">
+              <div class="sc-att-avatar">{{ registration.name|slice:":1" }}</div>
+              <div class="sc-att-name">{{ registration.name }}</div>
+            </div>
+            {% if registration.checked_in %}
+              <div class="sc-att-status-badge in">Already Checked In</div>
+            {% else %}
+              <div class="sc-att-status-badge out">Not Yet Checked In</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="sc-att-details">
+          <div class="sc-att-field">
+            <div class="sc-att-label">Email</div>
+            <div class="sc-att-val" style="word-break:break-all;font-size:12.5px">{{ registration.email }}</div>
+          </div>
+          <div class="sc-att-field">
+            <div class="sc-att-label">Phone</div>
+            <div class="sc-att-val">{{ registration.phone }}</div>
+          </div>
+          <div class="sc-att-field">
+            <div class="sc-att-label">Booking ID</div>
+            <div class="sc-att-val"><span class="sc-booking-chip">{{ registration.booking_id }}</span></div>
+          </div>
+          <div class="sc-att-field">
+            <div class="sc-att-label">Ticket</div>
+            <div class="sc-att-val">{{ registration.ticket_type.name }} × {{ registration.quantity }}</div>
+          </div>
+        </div>
+
+        <div class="sc-att-foot">
+          {% if registration.checked_in %}
+            <button class="sc-confirm-btn already" disabled>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M3 8l4 4 6-6"/>
+              </svg>
+              Already Checked In
             </button>
-        </form>
-    </section>
-{% endif %}
+          {% else %}
+            <form method="post" action="{% url 'events:checkin_confirm' event.public_id registration.id %}">
+              {% csrf_token %}
+              <button class="sc-confirm-btn checkin" type="submit">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M3 8l4 4 6-6"/>
+                </svg>
+                Confirm Check-in
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Idle state — no scan yet -->
+      <div class="sc-result-idle" id="sc-result-idle">
+        <div class="sc-result-idle-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="11" cy="11" r="7"/><path d="M17 17l4 4"/>
+          </svg>
+        </div>
+        <h3>Waiting for scan</h3>
+        <p>Start the camera and point it at a ticket QR code. Attendee details will appear here.</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
 
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 <script>
-    (function () {
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const statusEl = document.getElementById("scan-status");
-        const startBtn = document.getElementById("start-scan");
-        const stopBtn = document.getElementById("stop-scan");
-        let stream = null;
-        let scanning = false;
+(function () {
+  const video    = document.getElementById('sc-video');
+  const canvas   = document.getElementById('sc-canvas');
+  const statusEl = document.getElementById('sc-status');
+  const statusTx = document.getElementById('sc-status-text');
+  const startBtn = document.getElementById('sc-start');
+  const stopBtn  = document.getElementById('sc-stop');
+  const idle     = document.getElementById('sc-idle');
+  const frame    = document.getElementById('sc-frame');
+  const scanline = document.getElementById('sc-scanline');
 
-        function setStatus(text) {
-            statusEl.textContent = text;
-            statusEl.style.display = "block";
-        }
+  let stream   = null;
+  let scanning = false;
+  let detected = false;
 
-        async function startCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = stream;
-                scanning = true;
-                setStatus("Scanning...");
-                requestAnimationFrame(tick);
-            } catch (err) {
-                setStatus("Camera access denied or unavailable.");
-            }
-        }
+  function setStatus(text, type) {
+    statusTx.textContent = text;
+    statusEl.className   = 'sc-status-bar show ' + (type || '');
+  }
 
-        function stopCamera() {
-            scanning = false;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            setStatus("Camera stopped.");
-        }
+  function hideStatus() {
+    statusEl.className = 'sc-status-bar';
+  }
 
-        function tick() {
-            if (!scanning) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.height = video.videoHeight;
-                canvas.width = video.videoWidth;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if (code && code.data) {
-                    const bookingId = code.data.trim();
-                    setStatus("QR detected. Loading details...");
-                    window.location.href = "{% url 'events:checkin_scan' event.public_id %}?booking_id=" + encodeURIComponent(bookingId);
-                    return;
-                }
-            }
-            requestAnimationFrame(tick);
-        }
+  async function startCamera() {
+    detected = false;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      video.srcObject = stream;
+      await video.play();
+      scanning = true;
 
-        startBtn.addEventListener("click", startCamera);
-        stopBtn.addEventListener("click", stopCamera);
-    })();
+      // Show frame + scanline, hide idle
+      idle.classList.add('hidden');
+      frame.classList.add('active');
+      scanline.classList.add('active');
+
+      startBtn.disabled = true;
+      stopBtn.disabled  = false;
+
+      setStatus('Scanning — point at a QR code…', 'scanning');
+      requestAnimationFrame(tick);
+    } catch (err) {
+      setStatus('Camera access denied or unavailable.', 'error');
+    }
+  }
+
+  function stopCamera() {
+    scanning = false;
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+    idle.classList.remove('hidden');
+    frame.classList.remove('active');
+    scanline.classList.remove('active');
+    startBtn.disabled = false;
+    stopBtn.disabled  = true;
+    setStatus('Camera stopped.', 'stopped');
+  }
+
+  function tick() {
+    if (!scanning || detected) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        detected = true;
+        setStatus('QR detected — loading attendee…', 'success');
+        scanline.style.animationPlayState = 'paused';
+        setTimeout(() => {
+          window.location.href =
+            "{% url 'events:checkin_scan' event.public_id %}?booking_id=" +
+            encodeURIComponent(code.data.trim());
+        }, 400);
+        return;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener('click', startCamera);
+  stopBtn.addEventListener('click', stopCamera);
+  stopBtn.disabled = true;
+})();
 </script>
+
 {% endblock %}

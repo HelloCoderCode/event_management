@@ -1,26 +1,472 @@
 {% extends "base.html" %}
-{% block title %}{% if ticket %}Edit Ticket{% else %}Add Ticket{% endif %}{% endblock %}
+{% block title %}{% if ticket %}Edit Ticket Type{% else %}Add Ticket Type{% endif %} · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>{% if ticket %}Edit Ticket Type{% else %}Add Ticket Type{% endif %} for {{ event.title }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label>Name</label>
-            {{ form.name }}
-        </div>
-        <div class="form-group">
-            <label>Price</label>
-            {{ form.price }}
-        </div>
-        <div class="form-group">
-            <label>Total Quantity</label>
-            {{ form.total_quantity }}
-        </div>
-        <button class="btn" type="submit">Save Ticket</button>
-    </form>
-    <div style="margin-top:16px;">
-        <a class="btn btn-secondary" href="{% url 'events:event_manage' event.public_id %}">Back to Manage</a>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ──────────────────────────────────────────────────────── */
+  .tk-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-top: 40px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  .tk-header {
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tk-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 12px;
+  }
+
+  .tk-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .tk-breadcrumb a:hover { color: var(--t1); }
+
+  .tk-title-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .tk-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--r-md);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .tk-title {
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+  }
+
+  .tk-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+    margin-top: 6px;
+    margin-left: 53px;
+  }
+
+  /* ── CARD ───────────────────────────────────────────────────────── */
+  .tk-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tk-card-head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .tk-card-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .tk-card-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  /* ── FORM BODY ──────────────────────────────────────────────────── */
+  .tk-body {
+    padding: 22px 22px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tk-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .tk-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .tk-required { color: var(--accent); margin-left: 2px; }
+
+  .tk-hint {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    margin-top: 2px;
+  }
+
+  /* Grid for price + qty */
+  .tk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* Input prefix wrapper (for currency symbol) */
+  .tk-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .tk-prefix {
+    position: absolute;
+    left: 12px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t3);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .tk-input-wrap input {
+    padding-left: 24px !important;
+  }
+
+  /* Style all Django-rendered inputs */
+  .tk-body input[type="text"],
+  .tk-body input[type="number"],
+  .tk-body input[type="email"],
+  .tk-body select,
+  .tk-body textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .tk-body input:focus,
+  .tk-body select:focus,
+  .tk-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+  }
+
+  /* Error */
+  .tk-field-error {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .tk-non-field-errors {
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.2);
+    border-radius: var(--r-sm);
+    padding: 10px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+  }
+
+  /* ── PREVIEW STRIP ──────────────────────────────────────────────── */
+  .tk-preview {
+    margin: 4px 0 4px;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--bg);
+    border: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: .2s;
+  }
+
+  .tk-preview-name {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--t1);
+  }
+
+  .tk-preview-name.empty {
+    color: var(--t3);
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .tk-preview-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .tk-preview-price {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .tk-preview-qty {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    background: var(--bd);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
+  .tk-footer {
+    padding: 14px 22px 20px;
+    border-top: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .tk-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .tk-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  .tk-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 26px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .tk-save-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .tk-wrap { padding-top: 24px; }
+    .tk-grid { grid-template-columns: 1fr; }
+    .tk-footer { flex-direction: column-reverse; }
+    .tk-save-btn, .tk-back-btn { width: 100%; justify-content: center; }
+    .tk-sub { margin-left: 0; }
+  }
+</style>
+
+<div class="tk-wrap">
+
+  <!-- Header -->
+  <div class="tk-header">
+    <div class="tk-breadcrumb">
+      <a href="{% url 'events:organizer_dashboard' %}">Dashboard</a>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <a href="{% url 'events:event_manage' event.public_id %}">{{ event.title|truncatechars:28 }}</a>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <span>{% if ticket %}Edit Ticket{% else %}Add Ticket{% endif %}</span>
     </div>
-</section>
+
+    <div class="tk-title-row">
+      <div class="tk-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 7a1 1 0 011-1h12a1 1 0 011 1v1a2 2 0 010 4v1a1 1 0 01-1 1H3a1 1 0 01-1-1v-1a2 2 0 010-4V7z"/>
+          <path stroke-dasharray="2 2" d="M7 6v6"/>
+        </svg>
+      </div>
+      <h1 class="tk-title">{% if ticket %}Edit Ticket Type{% else %}Add Ticket Type{% endif %}</h1>
+    </div>
+    <p class="tk-sub">{% if ticket %}Update this ticket for{% else %}Create a new ticket type for{% endif %} <em>{{ event.title }}</em>.</p>
+  </div>
+
+  <!-- Card -->
+  <div class="tk-card">
+
+    <div class="tk-card-head">
+      <div class="tk-card-icon">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M2 6a1 1 0 011-1h10a1 1 0 011 1v1a2 2 0 010 4v1a1 1 0 01-1 1H3a1 1 0 01-1-1v-1a2 2 0 010-4V6z"/>
+          <path stroke-dasharray="1.5 1.5" d="M6 5v6"/>
+        </svg>
+      </div>
+      <div class="tk-card-title">Ticket Details</div>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="tk-body">
+
+        {% if form.non_field_errors %}
+          <div class="tk-non-field-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Name -->
+        <div class="tk-field">
+          <div class="tk-label">Ticket Name <span class="tk-required">*</span></div>
+          {{ form.name }}
+          <div class="tk-hint">e.g. General Admission, VIP, Student</div>
+          {% if form.name.errors %}
+            <div class="tk-field-error">{{ form.name.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Price + Qty side by side -->
+        <div class="tk-grid">
+          <div class="tk-field">
+            <div class="tk-label">Price <span class="tk-required">*</span></div>
+            <div class="tk-input-wrap">
+              <span class="tk-prefix">₹</span>
+              {{ form.price }}
+            </div>
+            {% if form.price.errors %}
+              <div class="tk-field-error">{{ form.price.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+          <div class="tk-field">
+            <div class="tk-label">Total Quantity <span class="tk-required">*</span></div>
+            {{ form.total_quantity }}
+            {% if form.total_quantity.errors %}
+              <div class="tk-field-error">{{ form.total_quantity.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Live preview -->
+        <div class="tk-preview" id="tk-preview">
+          <div class="tk-preview-name empty" id="tk-preview-name">Ticket name preview</div>
+          <div class="tk-preview-right">
+            <div class="tk-preview-price" id="tk-preview-price">₹0</div>
+            <div class="tk-preview-qty" id="tk-preview-qty">0 left</div>
+          </div>
+        </div>
+
+      </div><!-- /.tk-body -->
+
+      <div class="tk-footer">
+        <a class="tk-back-btn" href="{% url 'events:event_manage' event.public_id %}">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+          Back to Manage
+        </a>
+        <button class="tk-save-btn" type="submit">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5 6.5-7"/></svg>
+          Save Ticket
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  function $(id) { return document.getElementById(id); }
+
+  const nameInput  = document.querySelector('[name="name"]');
+  const priceInput = document.querySelector('[name="price"]');
+  const qtyInput   = document.querySelector('[name="total_quantity"]');
+
+  const previewName  = $('tk-preview-name');
+  const previewPrice = $('tk-preview-price');
+  const previewQty   = $('tk-preview-qty');
+
+  function update() {
+    const name  = nameInput  ? nameInput.value.trim()   : '';
+    const price = priceInput ? parseFloat(priceInput.value) : NaN;
+    const qty   = qtyInput   ? parseInt(qtyInput.value, 10) : NaN;
+
+    if (name) {
+      previewName.textContent = name;
+      previewName.classList.remove('empty');
+    } else {
+      previewName.textContent = 'Ticket name preview';
+      previewName.classList.add('empty');
+    }
+
+    previewPrice.textContent = isNaN(price) ? '₹0' : '₹' + price.toLocaleString('en-IN');
+    previewQty.textContent   = isNaN(qty)   ? '0 left' : qty.toLocaleString('en-IN') + ' left';
+  }
+
+  [nameInput, priceInput, qtyInput].forEach(el => {
+    if (el) el.addEventListener('input', update);
+  });
+
+  update();
+})();
+</script>
+
 {% endblock %}

@@ -1,25 +1,751 @@
 {% extends "base.html" %}
-{% block title %}Events{% endblock %}
+{% block title %}Events — Discover What's Happening{% endblock %}
 {% block content %}
-<section class="hero">
-    <h1>Upcoming Events</h1>
-    <p>Discover events and register in a few clicks.</p>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+
+  :root {
+    --ev-serif: 'DM Serif Display', Georgia, serif;
+    --ev-sans: 'DM Sans', -apple-system, sans-serif;
+  }
+
+  /* ── HERO ────────────────────────────────────────────────────── */
+  .ev-hero {
+    position: relative;
+    padding: 72px 0 56px;
+    overflow: hidden;
+  }
+
+  .ev-full {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .ev-hero::before {
+    content: '';
+    position: absolute;
+    inset: -60px -120px;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(0,113,227,.10) 0%, transparent 65%),
+      radial-gradient(ellipse 45% 40% at 80% 20%, rgba(52,199,89,.08) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 65% 80%, rgba(255,159,10,.07) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .ev-hero-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 24px;
+  }
+
+  .ev-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--ev-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .ev-hero-eyebrow span {
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+    border-radius: 2px;
+  }
+
+  .ev-hero h1 {
+    font-family: var(--ev-serif);
+    font-size: clamp(36px, 5.5vw, 64px);
+    font-weight: 400;
+    line-height: 1.09;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    margin-bottom: 16px;
+  }
+
+  .ev-hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .ev-hero-sub {
+    font-family: var(--ev-sans);
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--t2);
+    max-width: 500px;
+  }
+
+  .ev-hero-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .ev-stat {
+    text-align: right;
+  }
+
+  .ev-stat-num {
+    font-family: var(--ev-serif);
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--t1);
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+
+  .ev-stat-label {
+    font-family: var(--ev-sans);
+    font-size: 11px;
+    color: var(--t3);
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .ev-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--bd2);
+    margin: 0 auto;
+  }
+
+  /* ── FILTER BAR ──────────────────────────────────────────────── */
+  .ev-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0 32px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ev-filter-bar::-webkit-scrollbar { display: none; }
+
+  .ev-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-family: var(--ev-sans);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    color: var(--t2);
+    transition: .15s;
+    flex-shrink: 0;
+  }
+
+  .ev-filter-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-l);
+  }
+
+  .ev-filter-pill.active {
+    border-color: var(--t1);
+    background: var(--t1);
+    color: #fff;
+  }
+
+  .ev-filter-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── EVENTS GRID ─────────────────────────────────────────────── */
+  .ev-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  /* ── CARD ────────────────────────────────────────────────────── */
+  .ev-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .25s, transform .25s, border-color .25s;
+    animation: cardIn .5s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .ev-card:hover {
+    box-shadow: var(--s-lg);
+    transform: translateY(-3px);
+    border-color: var(--bd2);
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .ev-card:nth-child(1) { animation-delay: .05s }
+  .ev-card:nth-child(2) { animation-delay: .10s }
+  .ev-card:nth-child(3) { animation-delay: .15s }
+  .ev-card:nth-child(4) { animation-delay: .20s }
+  .ev-card:nth-child(5) { animation-delay: .25s }
+  .ev-card:nth-child(6) { animation-delay: .30s }
+
+  /* Coloured top-band */
+  .ev-card-band {
+    height: 6px;
+    background: linear-gradient(90deg, var(--band-a), var(--band-b));
+  }
+
+  .ev-card:nth-child(6n+1) { --band-a:#0071e3; --band-b:#5ac8fa; }
+  .ev-card:nth-child(6n+2) { --band-a:#34c759; --band-b:#30d158; }
+  .ev-card:nth-child(6n+3) { --band-a:#ff9f0a; --band-b:#ffd60a; }
+  .ev-card:nth-child(6n+4) { --band-a:#bf5af2; --band-b:#ff375f; }
+  .ev-card:nth-child(6n+5) { --band-a:#ff375f; --band-b:#ff6961; }
+  .ev-card:nth-child(6n+6) { --band-a:#5ac8fa; --band-b:#34c759; }
+
+  .ev-card-body {
+    padding: 22px 22px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ev-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ev-tag {
+    font-family: var(--ev-sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--accent-l);
+    color: var(--accent);
+  }
+
+  .ev-date-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--ev-sans);
+    font-size: 11.5px;
+    color: var(--t3);
+    font-weight: 500;
+  }
+
+  .ev-date-chip svg { flex-shrink: 0; opacity: .7; }
+
+  .ev-card-title {
+    font-family: var(--ev-serif);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    color: var(--t1);
+  }
+
+  .ev-card-loc {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--ev-sans);
+    font-size: 12.5px;
+    color: var(--t2);
+    font-weight: 400;
+  }
+
+  .ev-card-desc {
+    font-family: var(--ev-sans);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--t2);
+    font-weight: 300;
+    flex: 1;
+    /* clamp to 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ev-card-footer {
+    padding: 0 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ev-seats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ev-seats-bar {
+    width: 56px;
+    height: 4px;
+    background: var(--bd);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .ev-seats-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--success);
+    transition: width .4s;
+  }
+
+  .ev-seats-fill.warn { background: var(--warn); }
+  .ev-seats-fill.full { background: var(--danger); }
+
+  .ev-seats-txt {
+    font-family: var(--ev-sans);
+    font-size: 11px;
+    color: var(--t3);
+    white-space: nowrap;
+  }
+
+  .ev-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: var(--t1);
+    color: #fff;
+    border-radius: var(--r-f);
+    font-family: var(--ev-sans);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background .15s, transform .15s;
+    white-space: nowrap;
+  }
+
+  .ev-btn:hover {
+    background: #333;
+    transform: scale(1.03);
+  }
+
+  .ev-btn svg {
+    transition: transform .15s;
+  }
+
+  .ev-btn:hover svg {
+    transform: translateX(2px);
+  }
+
+  /* ── FEATURED (spans 2 cols) ─────────────────────────────────── */
+  .ev-card.featured {
+    grid-column: span 2;
+    flex-direction: row;
+  }
+
+  .ev-card.featured .ev-card-band {
+    width: 6px;
+    height: auto;
+    background: linear-gradient(180deg, #0071e3, #5ac8fa);
+  }
+
+  .ev-card.featured .ev-card-body {
+    padding: 28px 28px 20px;
+  }
+
+  .ev-card.featured .ev-card-footer {
+    padding: 0 28px 24px;
+  }
+
+  .ev-card.featured .ev-card-title {
+    font-size: 26px;
+  }
+
+  .ev-card-media {
+    width: 100%;
+    height: 110px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .ev-card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ev-card.featured .ev-card-media {
+    height: 150px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+  }
+
+  .ev-featured-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--ev-sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ff9f0a22, #ff9f0a11);
+    color: var(--warn);
+    border: 1px solid rgba(255,159,10,.25);
+  }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────── */
+  .ev-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .ev-empty-icon {
+    width: 64px; height: 64px;
+    background: var(--bg2);
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-xl);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+  }
+
+  .ev-empty h3 {
+    font-family: var(--ev-serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--t1);
+  }
+
+  .ev-empty p {
+    font-family: var(--ev-sans);
+    font-size: 14px;
+    color: var(--t3);
+    max-width: 280px;
+    line-height: 1.6;
+  }
+
+  /* ── CTA STRIP ───────────────────────────────────────────────── */
+  .ev-cta-strip {
+    margin-top: 56px;
+    border-radius: var(--r-xl);
+    background: var(--t1);
+    padding: 40px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ev-cta-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 80% at 90% 50%, rgba(0,113,227,.35) 0%, transparent 65%),
+      radial-gradient(ellipse 30% 60% at 10% 50%, rgba(52,199,89,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .ev-cta-strip-text { position: relative; }
+
+  .ev-cta-strip h2 {
+    font-family: var(--ev-serif);
+    font-size: 28px;
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .ev-cta-strip p {
+    font-family: var(--ev-sans);
+    font-size: 14px;
+    color: rgba(255,255,255,.6);
+    font-weight: 300;
+  }
+
+  .ev-cta-strip-actions {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .ev-btn-white {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 22px;
+    border-radius: var(--r-f);
+    font-family: var(--ev-sans);
+    font-size: 14px;
+    font-weight: 500;
+    background: #fff;
+    color: var(--t1);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .ev-btn-white:hover { background: rgba(255,255,255,.88); transform: scale(1.03); }
+
+  .ev-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 22px;
+    border-radius: var(--r-f);
+    font-family: var(--ev-sans);
+    font-size: 14px;
+    font-weight: 500;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .ev-btn-ghost:hover { background: rgba(255,255,255,.2); transform: scale(1.03); }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .ev-grid { grid-template-columns: repeat(2, 1fr); }
+    .ev-card.featured { grid-column: span 2; }
+    .ev-hero-inner { grid-template-columns: 1fr; }
+    .ev-hero-stats { flex-direction: row; align-items: center; margin-top: 16px; }
+    .ev-divider { width: 40px; height: 1px; margin: 0; }
+    .ev-stat { text-align: left; }
+  }
+
+  @media (max-width: 640px) {
+    .ev-full { padding: 0 20px; }
+    .ev-grid { grid-template-columns: 1fr; }
+    .ev-card.featured { flex-direction: column; grid-column: span 1; }
+    .ev-card.featured .ev-card-band { width: 100%; height: 6px; background: linear-gradient(90deg, #0071e3, #5ac8fa); }
+    .ev-cta-strip { flex-direction: column; padding: 32px 24px; text-align: center; }
+    .ev-cta-strip-actions { flex-direction: column; width: 100%; }
+    .ev-btn-white, .ev-btn-ghost { justify-content: center; }
+    .ev-hero { padding: 40px 0 32px; }
+    .ev-hero h1 { font-size: 34px; }
+    .ev-hero-stats { flex-wrap: wrap; }
+  }
+</style>
+
+<!-- ── HERO ──────────────────────────────────────────────────── -->
+<section class="ev-hero">
+  <div class="ev-full ev-hero-inner">
+    <div>
+      <div class="ev-hero-eyebrow"><span></span> Live &amp; upcoming</div>
+      <h1>Find your next <em>experience.</em></h1>
+      <p class="ev-hero-sub">Hand-picked events across tech, arts, music, and culture — register in seconds, no fuss.</p>
+    </div>
+    <div class="ev-hero-stats">
+      <div class="ev-stat">
+        <div class="ev-stat-num">48</div>
+        <div class="ev-stat-label">Events</div>
+      </div>
+      <div class="ev-divider"></div>
+      <div class="ev-stat">
+        <div class="ev-stat-num">3.2k</div>
+        <div class="ev-stat-label">Attendees</div>
+      </div>
+      <div class="ev-divider"></div>
+      <div class="ev-stat">
+        <div class="ev-stat-num">12</div>
+        <div class="ev-stat-label">Cities</div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<section class="grid">
-    {% for event in events %}
-        <article class="card">
-            <h3>{{ event.title }}</h3>
-            <p class="badge">
-                Start: {{ event.start_date }} {{ event.start_time }} •
-                End: {{ event.end_date }} {{ event.end_time }}
-            </p>
-            <p>{{ event.location }}</p>
-            <p>{{ event.description|truncatechars:120 }}</p>
-            <a class="btn" href="{% url 'events:event_detail' event.slug %}">View Details</a>
-        </article>
-    {% empty %}
-        <p>No events available yet.</p>
-    {% endfor %}
+<!-- ── FILTER PILLS ───────────────────────────────────────────── -->
+<div class="ev-full ev-filter-bar">
+  <button class="ev-filter-pill active">All Events</button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#0071e3"></span>Technology
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#ff9f0a"></span>Music
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#34c759"></span>Wellness
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#bf5af2"></span>Arts &amp; Culture
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#ff375f"></span>Business
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#5ac8fa"></span>Education
+  </button>
+  <button class="ev-filter-pill">
+    <span class="ev-filter-dot" style="background:#ffd60a"></span>Food &amp; Drink
+  </button>
+</div>
+
+<!-- ── EVENTS GRID ────────────────────────────────────────────── -->
+<section class="ev-full ev-grid">
+  {% for event in events %}
+
+    {% if forloop.first %}
+    <!-- First card is featured / wide -->
+    <article class="ev-card featured">
+      <div class="ev-card-band"></div>
+      <div style="flex:1;display:flex;flex-direction:column;">
+        <div class="ev-card-body">
+          {% if event.image %}
+          <div class="ev-card-media">
+            <img src="{{ event.image.url }}" alt="{{ event.title }}">
+          </div>
+          {% endif %}
+          <div class="ev-card-meta">
+            <span class="ev-featured-badge">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M6 .5l1.5 3.1 3.4.5-2.5 2.4.6 3.4L6 8.3l-3 1.6.6-3.4L1 4.1l3.4-.5z"/></svg>
+              Featured
+            </span>
+            <span class="ev-tag">Highlight</span>
+            <span class="ev-date-chip">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 1v4M11 1v4M2 7h12"/></svg>
+              {{ event.start_date }} · {{ event.start_time }}
+            </span>
+          </div>
+          <h2 class="ev-card-title">{{ event.title }}</h2>
+          <div class="ev-card-loc">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5A4.5 4.5 0 0 1 12.5 6C12.5 10 8 14.5 8 14.5S3.5 10 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
+            {{ event.location }}
+          </div>
+          <p class="ev-card-desc">{{ event.description|truncatechars:220 }}</p>
+        </div>
+        <div class="ev-card-footer">
+          <div class="ev-seats">
+            <div class="ev-seats-bar"><div class="ev-seats-fill" style="width:60%"></div></div>
+            <span class="ev-seats-txt">Seats available</span>
+          </div>
+          <a class="ev-btn" href="{% url 'events:event_detail' event.slug %}">
+            View Details
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    {% else %}
+    <!-- Regular card -->
+    <article class="ev-card">
+      <div class="ev-card-band"></div>
+      <div class="ev-card-body">
+        {% if event.image %}
+        <div class="ev-card-media">
+          <img src="{{ event.image.url }}" alt="{{ event.title }}">
+        </div>
+        {% endif %}
+        <div class="ev-card-meta">
+          <span class="ev-tag">Event</span>
+          <span class="ev-date-chip">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 1v4M11 1v4M2 7h12"/></svg>
+            {{ event.start_date }}
+          </span>
+        </div>
+        <h3 class="ev-card-title">{{ event.title }}</h3>
+        <div class="ev-card-loc">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5A4.5 4.5 0 0 1 12.5 6C12.5 10 8 14.5 8 14.5S3.5 10 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/><circle cx="8" cy="6" r="1.5"/></svg>
+          {{ event.location }}
+        </div>
+        <p class="ev-card-desc">{{ event.description|truncatechars:120 }}</p>
+      </div>
+      <div class="ev-card-footer">
+        <div class="ev-seats">
+          <div class="ev-seats-bar">
+            <div class="ev-seats-fill {% cycle '' 'warn' '' '' 'full' '' %}" style="width:{% cycle '75' '90' '40' '55' '100' '30' %}%"></div>
+          </div>
+          <span class="ev-seats-txt">{% cycle 'Few left' 'Almost full' 'Open' 'Available' 'Sold out' 'Open' %}</span>
+        </div>
+        <a class="ev-btn" href="{% url 'events:event_detail' event.slug %}">
+          View
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+        </a>
+      </div>
+    </article>
+    {% endif %}
+
+  {% empty %}
+  <!-- Empty state -->
+  <div class="ev-empty">
+    <div class="ev-empty-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="3" y="4" width="18" height="18" rx="3"/>
+        <path d="M8 2v4M16 2v4M3 10h18"/>
+        <path d="M8 15h.01M12 15h.01M16 15h.01"/>
+      </svg>
+    </div>
+    <h3>No events yet</h3>
+    <p>Check back soon — exciting events are being added all the time.</p>
+  </div>
+  {% endfor %}
 </section>
+
+<!-- ── CTA STRIP ──────────────────────────────────────────────── -->
+<div class="ev-full ev-cta-strip">
+  <div class="ev-cta-strip-text">
+    <h2>Want to host your own event?</h2>
+    <p>Create, manage, and sell tickets — all from one dashboard.</p>
+  </div>
+  <div class="ev-cta-strip-actions">
+    <a href="{% url 'events:organizer_dashboard' %}" class="ev-btn-white">
+      Go to Organizer
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+    </a>
+    {% if not user.is_authenticated %}
+    <a href="{% url 'users:register' %}" class="ev-btn-ghost">Create Account</a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  /* Filter pill interactivity */
+  document.querySelectorAll('.ev-filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.ev-filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+  });
+</script>
 {% endblock %}

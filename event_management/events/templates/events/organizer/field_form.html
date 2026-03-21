@@ -1,23 +1,652 @@
 {% extends "base.html" %}
-{% block title %}Add Registration Field{% endblock %}
+{% block title %}Add Registration Field · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Add Registration Field for {{ event.title }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label>Label</label>
-            {{ form.label }}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ───────────────────────────────────────────────────── */
+  .rf-wrap {
+    max-width: 600px;
+    margin: 0 auto;
+    padding-top: 40px;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────────── */
+  .rf-header {
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rf-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 12px;
+  }
+
+  .rf-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .rf-breadcrumb a:hover { color: var(--t1); }
+
+  .rf-title-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .rf-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--r-md);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .rf-title {
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+  }
+
+  .rf-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+    margin-top: 6px;
+    margin-left: 53px;
+  }
+
+  /* ── CARD ────────────────────────────────────────────────────── */
+  .rf-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rf-card-head {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .rf-card-head-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .rf-card-head-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  /* ── FIELDS ──────────────────────────────────────────────────── */
+  .rf-body {
+    padding: 24px 24px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .rf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rf-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--t2);
+    letter-spacing: .01em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .rf-required { color: var(--danger); font-size: 11px; }
+
+  .rf-hint {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    margin-top: -2px;
+    line-height: 1.5;
+  }
+
+  /* Style inputs */
+  .rf-body input[type="text"],
+  .rf-body input[type="email"],
+  .rf-body select {
+    width: 100%;
+    padding: 9px 13px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .rf-body input:focus,
+  .rf-body select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+    background: var(--bg2);
+  }
+
+  .rf-body select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23aeaeb2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  /* Field error */
+  .rf-error {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--danger);
+    font-weight: 500;
+  }
+
+  /* ── TOGGLE (Required checkbox) ──────────────────────────────── */
+  .rf-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: var(--r-md);
+    background: var(--bg);
+    border: 1.5px solid var(--bd);
+    transition: border-color .15s;
+    cursor: pointer;
+  }
+
+  .rf-toggle-row:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-l);
+  }
+
+  .rf-toggle-info { flex: 1; }
+
+  .rf-toggle-title {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--t1);
+    margin-bottom: 2px;
+  }
+
+  .rf-toggle-desc {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  /* Custom checkbox toggle */
+  .rf-toggle-switch {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+    margin-left: 12px;
+    pointer-events: none;
+  }
+
+  .rf-toggle-switch input {
+    opacity: 0;
+    width: 0; height: 0;
+    position: absolute;
+  }
+
+  .rf-toggle-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--bd2);
+    transition: background .2s;
+  }
+
+  .rf-toggle-row:has(input:checked) .rf-toggle-track {
+    background: var(--accent);
+  }
+
+  .rf-toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .rf-toggle-row:has(input:checked) .rf-toggle-thumb {
+    transform: translateX(16px);
+  }
+
+  /* ── FIELD TYPE PREVIEW ──────────────────────────────────────── */
+  .rf-preview {
+    border-radius: var(--r-md);
+    background: var(--bg);
+    border: 1.5px dashed var(--bd2);
+    padding: 14px 16px;
+    transition: border-color .2s;
+  }
+
+  .rf-preview-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 8px;
+  }
+
+  .rf-preview-field {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .rf-preview-input-mock {
+    padding: 7px 11px;
+    border-radius: var(--r-xs);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    pointer-events: none;
+  }
+
+  .rf-preview-textarea-mock {
+    padding: 7px 11px;
+    border-radius: var(--r-xs);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    height: 52px;
+    pointer-events: none;
+  }
+
+  .rf-preview-check-mock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+  }
+
+  .rf-preview-check-box {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ──────────────────────────────────────────────────── */
+  .rf-footer {
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--bg);
+  }
+
+  .rf-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .rf-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  .rf-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: var(--r-f);
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .rf-save-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── EXISTING FIELDS LIST ────────────────────────────────────── */
+  .rf-existing {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-xs);
+    margin-top: 16px;
+    animation: fadeUp .5s .1s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rf-existing-head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--bg);
+  }
+
+  .rf-existing-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+    flex: 1;
+  }
+
+  .rf-existing-count {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bd);
+  }
+
+  .rf-existing-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 22px;
+    border-bottom: 1px solid var(--bd);
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  .rf-existing-row:last-child { border-bottom: none; }
+
+  .rf-existing-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .rf-existing-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--t1);
+  }
+
+  .rf-existing-chip {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--bd2);
+    color: var(--t3);
+    white-space: nowrap;
+  }
+
+  .rf-req-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+    flex-shrink: 0;
+    title: "Required";
+  }
+
+  .rf-existing-empty {
+    padding: 20px 22px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    text-align: center;
+    font-weight: 300;
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────── */
+  @media (max-width: 520px) {
+    .rf-wrap { padding-top: 24px; }
+    .rf-footer { flex-direction: column-reverse; }
+    .rf-save-btn, .rf-back-btn { width: 100%; justify-content: center; }
+    .rf-sub { margin-left: 0; margin-top: 8px; }
+  }
+</style>
+
+<div class="rf-wrap">
+
+  <!-- Header -->
+  <div class="rf-header">
+    <div class="rf-breadcrumb">
+      <a href="{% url 'events:organizer_dashboard' %}">Dashboard</a>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <a href="{% url 'events:event_manage' event.public_id %}">{{ event.title|truncatechars:28 }}</a>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <span>Registration Fields</span>
+    </div>
+    <div class="rf-title-row">
+      <div class="rf-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="2" width="14" height="14" rx="2.5"/>
+          <path d="M5 7h8M5 10h5"/>
+          <path d="M13 12v3M11.5 13.5H14.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 class="rf-title">Add Registration Field</h1>
+    </div>
+    <p class="rf-sub">Define what information attendees must provide when registering for <em>{{ event.title }}</em>.</p>
+  </div>
+
+  <!-- Form card -->
+  <div class="rf-card">
+
+    <div class="rf-card-head">
+      <div class="rf-card-head-icon">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 11h4M5 5h3"/>
+        </svg>
+      </div>
+      <div class="rf-card-head-title">Field Configuration</div>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="rf-body">
+
+        <!-- Label -->
+        <div class="rf-field">
+          <label class="rf-label" for="{{ form.label.id_for_label }}">
+            Field Label <span class="rf-required">*</span>
+          </label>
+          <span class="rf-hint">Shown to the attendee on the registration form (e.g. "Company Name", "T-shirt Size").</span>
+          {{ form.label }}
+          {% if form.label.errors %}<span class="rf-error">{{ form.label.errors|join:", " }}</span>{% endif %}
         </div>
-        <div class="form-group">
-            <label>Field Type</label>
-            {{ form.field_type }}
+
+        <!-- Field Type -->
+        <div class="rf-field">
+          <label class="rf-label" for="{{ form.field_type.id_for_label }}">
+            Field Type <span class="rf-required">*</span>
+          </label>
+          <span class="rf-hint">Choose how this field will appear on the form.</span>
+          {{ form.field_type }}
+          {% if form.field_type.errors %}<span class="rf-error">{{ form.field_type.errors|join:", " }}</span>{% endif %}
         </div>
-        <div class="form-group">
-            <label>Required</label>
-            {{ form.required }}
+
+        <!-- Live preview -->
+        <div class="rf-preview" id="rf-preview">
+          <div class="rf-preview-label">Preview</div>
+          <div id="rf-preview-content">
+            <div class="rf-preview-input-mock">Text input will appear here…</div>
+          </div>
         </div>
-        <button class="btn" type="submit">Save Field</button>
+
+        <!-- Required toggle -->
+        <div class="rf-field">
+          <label class="rf-toggle-row" for="{{ form.required.id_for_label }}">
+            <div class="rf-toggle-info">
+              <div class="rf-toggle-title">Required Field</div>
+              <div class="rf-toggle-desc">Attendees must fill in this field to complete registration.</div>
+            </div>
+            <div class="rf-toggle-switch">
+              {{ form.required }}
+              <div class="rf-toggle-track"></div>
+              <div class="rf-toggle-thumb"></div>
+            </div>
+          </label>
+          {% if form.required.errors %}<span class="rf-error">{{ form.required.errors|join:", " }}</span>{% endif %}
+        </div>
+
+      </div>
+
+      <div class="rf-footer">
+        <a class="rf-back-btn" href="{% url 'events:event_manage' event.public_id %}">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+          Back to Manage
+        </a>
+        <button class="rf-save-btn" type="submit">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5 6.5-7"/></svg>
+          Save Field
+        </button>
+      </div>
+
     </form>
-</section>
+  </div>
+
+  <!-- Existing fields list -->
+  {% if fields %}
+  <div class="rf-existing">
+    <div class="rf-existing-head">
+      <div class="rf-existing-title">Existing Fields</div>
+      <span class="rf-existing-count">{{ fields|length }}</span>
+    </div>
+    {% for field in fields %}
+    <div class="rf-existing-row">
+      <div class="rf-existing-num">{{ forloop.counter }}</div>
+      <div class="rf-existing-name">{{ field.label }}</div>
+      {% if field.required %}<div class="rf-req-dot" title="Required"></div>{% endif %}
+      <span class="rf-existing-chip">{{ field.get_field_type_display }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+/* Live field type preview */
+const typeSelect = document.querySelector('select[name="field_type"]');
+const preview    = document.getElementById('rf-preview-content');
+const labelInput = document.querySelector('input[name="label"]');
+
+const PREVIEWS = {
+  text:     () => `<div class="rf-preview-input-mock" style="width:100%">Short text…</div>`,
+  textarea: () => `<div class="rf-preview-textarea-mock" style="width:100%"></div>`,
+  email:    () => `<div class="rf-preview-input-mock" style="width:100%">email@example.com</div>`,
+  number:   () => `<div class="rf-preview-input-mock" style="width:80px">0</div>`,
+  date:     () => `<div class="rf-preview-input-mock" style="width:160px">dd / mm / yyyy</div>`,
+  checkbox: () => `<div class="rf-preview-check-mock"><div class="rf-preview-check-box"></div><span>Yes</span></div>`,
+  select:   () => `<div class="rf-preview-input-mock" style="width:100%;display:flex;justify-content:space-between;"><span>Choose an option…</span><span>▾</span></div>`,
+};
+
+function updatePreview() {
+  const type = typeSelect ? typeSelect.value : 'text';
+  const fn   = PREVIEWS[type] || PREVIEWS['text'];
+  if (preview) preview.innerHTML = fn();
+}
+
+if (typeSelect) {
+  typeSelect.addEventListener('change', updatePreview);
+  updatePreview();
+}
+
+/* Make the whole toggle row clickable (checkbox is inside label already) */
+document.querySelectorAll('.rf-toggle-row input[type="checkbox"]').forEach(cb => {
+  cb.style.position = 'absolute';
+  cb.style.opacity  = '0';
+  cb.style.width    = '0';
+  cb.style.height   = '0';
+});
+</script>
+
 {% endblock %}

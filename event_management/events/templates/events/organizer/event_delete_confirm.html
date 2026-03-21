@@ -1,16 +1,369 @@
 {% extends "base.html" %}
-{% block title %}Delete Event{% endblock %}
+{% block title %}Delete Event · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Delete Event</h1>
-    <p>Are you sure you want to delete <strong>{{ event.title }}</strong>?</p>
-    <p>This will delete the event, ticket types, registrations, and custom fields.</p>
-    <form method="post">
-        {% csrf_token %}
-        <button class="btn btn-secondary" type="submit" onclick="return confirm('This will permanently delete everything for this event. Continue?');">
-            Yes, Delete Everything
-        </button>
-        <a class="btn" href="{% url 'events:event_manage' event.public_id %}">Cancel</a>
-    </form>
-</section>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── PAGE SHELL ─────────────────────────────────────────────── */
+  .del-wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    padding-top: 56px;
+    padding-bottom: 40px;
+    animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  /* ── DANGER ICON ────────────────────────────────────────────── */
+  .del-icon-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255,59,48,.08);
+    border: 1.5px solid rgba(255,59,48,.2);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 24px;
+    color: var(--danger);
+    animation: popIn .5s .05s cubic-bezier(.34,1.56,.64,1) both;
+  }
+
+  @keyframes popIn {
+    from { opacity:0; transform: scale(.6); }
+    to   { opacity:1; transform: scale(1); }
+  }
+
+  /* ── HEADING ────────────────────────────────────────────────── */
+  .del-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    text-align: center;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+
+  .del-sub {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t3);
+    text-align: center;
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+
+  .del-sub strong {
+    font-weight: 600;
+    color: var(--t2);
+  }
+
+  /* ── CONSEQUENCE LIST ───────────────────────────────────────── */
+  .del-card {
+    background: var(--bg2);
+    border: 1.5px solid rgba(255,59,48,.15);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 12px rgba(255,59,48,.06), var(--s-sm);
+  }
+
+  .del-card-head {
+    padding: 14px 20px 12px;
+    background: rgba(255,59,48,.05);
+    border-bottom: 1px solid rgba(255,59,48,.1);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .del-card-head-icon {
+    color: var(--danger);
+    flex-shrink: 0;
+  }
+
+  .del-card-head-text {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--danger);
+  }
+
+  .del-list {
+    padding: 6px 0 8px;
+  }
+
+  .del-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t2);
+    font-weight: 400;
+    border-bottom: 1px solid var(--bd);
+  }
+
+  .del-list-item:last-child { border-bottom: none; }
+
+  .del-list-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+    opacity: .5;
+    flex-shrink: 0;
+  }
+
+  /* ── CONFIRM FIELD ──────────────────────────────────────────── */
+  .del-confirm-field {
+    margin-bottom: 22px;
+  }
+
+  .del-confirm-label {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+
+  .del-confirm-label code {
+    font-family: 'SF Mono','Fira Code','Courier New',monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--danger);
+    background: rgba(255,59,48,.08);
+    padding: 2px 7px;
+    border-radius: var(--r-xs);
+  }
+
+  .del-confirm-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-md);
+    background: var(--bg2);
+    font-family: 'SF Mono','Fira Code','Courier New',monospace;
+    font-size: 13.5px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  .del-confirm-input:focus {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(255,59,48,.1);
+  }
+
+  .del-confirm-input.valid {
+    border-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(52,199,89,.1);
+  }
+
+  /* ── ACTIONS ────────────────────────────────────────────────── */
+  .del-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .del-btn-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    background: var(--danger);
+    color: #fff;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(255,59,48,.3);
+  }
+
+  .del-btn-delete:hover:not(:disabled) {
+    background: #e0352b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(255,59,48,.38);
+  }
+
+  .del-btn-delete:disabled {
+    background: var(--t3);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+    opacity: .5;
+  }
+
+  .del-btn-cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--t2);
+    background: var(--bg2);
+    border: 1.5px solid var(--bd2);
+    transition: .15s;
+  }
+
+  .del-btn-cancel:hover {
+    border-color: var(--t1);
+    color: var(--t1);
+  }
+
+  /* ── SAFE LABEL ─────────────────────────────────────────────── */
+  .del-safe-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────── */
+  @media (max-width: 560px) {
+    .del-wrap { padding-top: 36px; }
+  }
+</style>
+
+<div class="del-wrap">
+
+  <!-- Danger icon -->
+  <div class="del-icon-ring">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6">
+      <path d="M14 3L25.26 23H2.74L14 3Z"/>
+      <path d="M14 11v5" stroke-linecap="round"/>
+      <circle cx="14" cy="19.5" r=".75" fill="currentColor" stroke="none"/>
+    </svg>
+  </div>
+
+  <!-- Heading -->
+  <h1 class="del-title">Delete this event?</h1>
+  <p class="del-sub">
+    You're about to permanently delete<br>
+    <strong>{{ event.title }}</strong>.<br>
+    This action cannot be undone.
+  </p>
+
+  <!-- What gets deleted -->
+  <div class="del-card">
+    <div class="del-card-head">
+      <svg class="del-card-head-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+        <circle cx="8" cy="8" r="6.5"/>
+        <path d="M8 5v3.5M8 11h.01"/>
+      </svg>
+      <span class="del-card-head-text">Everything below will be permanently deleted</span>
+    </div>
+    <div class="del-list">
+      <div class="del-list-item">
+        <div class="del-list-dot"></div>
+        The event — <strong>{{ event.title }}</strong>
+      </div>
+      <div class="del-list-item">
+        <div class="del-list-dot"></div>
+        All ticket types and pricing tiers
+      </div>
+      <div class="del-list-item">
+        <div class="del-list-dot"></div>
+        All attendee registrations and booking records
+      </div>
+      <div class="del-list-item">
+        <div class="del-list-dot"></div>
+        All custom form fields and responses
+      </div>
+      <div class="del-list-item">
+        <div class="del-list-dot"></div>
+        All check-in data and QR codes
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm by typing -->
+  <div class="del-confirm-field">
+    <div class="del-confirm-label">
+      Type <code>delete</code> below to confirm
+    </div>
+    <input
+      class="del-confirm-input"
+      type="text"
+      id="del-confirm-input"
+      placeholder="delete"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    >
+  </div>
+
+  <!-- Actions -->
+  <form method="post" id="del-form">
+    {% csrf_token %}
+    <div class="del-actions">
+      <button class="del-btn-delete" type="submit" id="del-submit" disabled>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M3 5h10M6 5V3.5h4V5M5.5 5l.5 8h4l.5-8"/>
+          <path d="M6.5 7v4M9.5 7v4"/>
+        </svg>
+        Yes, Delete Everything
+      </button>
+      <a class="del-btn-cancel" href="{% url 'events:event_manage' event.public_id %}">
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+        Cancel — Keep Event
+      </a>
+    </div>
+  </form>
+
+  <div class="del-safe-note">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+      <path d="M8 1.5L3 4v4.5C3 12 8 14.5 8 14.5S13 12 13 8.5V4L8 1.5Z"/>
+      <path d="M5.5 8l2 2 3-3"/>
+    </svg>
+    Cancel is safe — nothing will be changed
+  </div>
+
+</div>
+
+<script>
+  const input  = document.getElementById('del-confirm-input');
+  const btn    = document.getElementById('del-submit');
+
+  input.addEventListener('input', function () {
+    const valid = this.value.trim().toLowerCase() === 'delete';
+    btn.disabled = !valid;
+    this.classList.toggle('valid', valid);
+  });
+
+  /* Extra guard on submit */
+  document.getElementById('del-form').addEventListener('submit', function (e) {
+    if (input.value.trim().toLowerCase() !== 'delete') {
+      e.preventDefault();
+    }
+  });
+</script>
+
 {% endblock %}

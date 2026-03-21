@@ -1,61 +1,749 @@
 {% extends "base.html" %}
 {% block title %}{{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>{{ event.title }}</h1>
-    <p class="badge">
-        Start: {{ event.start_date }} {{ event.start_time }} •
-        End: {{ event.end_date }} {{ event.end_time }}
-    </p>
-    <p><strong>Location:</strong> {{ event.location }}</p>
-    <p>{{ event.description }}</p>
-    {% if event.image %}
-        <img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width:100%; border-radius:12px;">
-    {% endif %}
-</section>
 
-<section class="card">
-    <h2>Tickets</h2>
-    {% if registration_closed %}
-        <div class="message">Registrations are closed for this event.</div>
-    {% endif %}
-    {% if ticket_types %}
-        <form method="get" action="{% url 'events:registration_form' event.slug %}">
-            <div class="ticket-grid">
-                {% for ticket in ticket_types %}
-                    <label class="ticket-row">
-                        <div>
-                            <strong>{{ ticket.name }}</strong>
-                            <div class="badge">INR {{ ticket.price }}</div>
-                            <div class="muted">
-                                {% if ticket.available_quantity == 0 %}
-                                    Sold out
-                                {% else %}
-                                    Available: {{ ticket.available_quantity }}
-                                {% endif %}
-                            </div>
-                        </div>
-                        <input type="radio" name="ticket_type" value="{{ ticket.id }}"
-                               {% if registration_closed %}disabled{% elif ticket.available_quantity == 0 %}disabled{% elif forloop.first %}checked{% endif %}>
-                    </label>
-                {% endfor %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,400&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── PAGE LAYOUT ───────────────────────────────────────── */
+  .ed-wrap {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    padding-top: 40px;
+    align-items: start;
+  }
+
+  /* ── BREADCRUMB ─────────────────────────────────────────── */
+  .ed-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--t3);
+    margin-bottom: 20px;
+    grid-column: 1 / -1;
+  }
+
+  .ed-breadcrumb a {
+    color: var(--t3);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .ed-breadcrumb a:hover { color: var(--t1); }
+
+  .ed-breadcrumb svg { flex-shrink: 0; }
+
+  /* ── LEFT COLUMN ────────────────────────────────────────── */
+  .ed-left { min-width: 0; }
+
+  /* Event image */
+  .ed-image-wrap {
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    background: linear-gradient(135deg, #e8f0fe 0%, #fce4ec 100%);
+    aspect-ratio: 16/7;
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  .ed-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Placeholder when no image */
+  .ed-image-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--t3);
+  }
+
+  .ed-image-placeholder svg { opacity: .4; }
+
+  .ed-image-placeholder span {
+    font-family: var(--sans);
+    font-size: 12px;
+    opacity: .5;
+  }
+
+  /* Event heading block */
+  .ed-head {
+    margin-bottom: 24px;
+  }
+
+  .ed-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .ed-tag {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-l);
+    color: var(--accent);
+  }
+
+  .ed-tag.live {
+    background: rgba(52,199,89,.12);
+    color: var(--success);
+  }
+
+  .ed-tag.closed {
+    background: rgba(255,59,48,.1);
+    color: var(--danger);
+  }
+
+  .ed-title {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    margin-bottom: 16px;
+  }
+
+  /* Meta pills row */
+  .ed-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .ed-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border-radius: var(--r-sm);
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--t2);
+    font-weight: 450;
+  }
+
+  .ed-meta-chip svg { color: var(--t3); flex-shrink: 0; }
+
+  /* Description */
+  .ed-section-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 12px;
+  }
+
+  .ed-desc {
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--t2);
+    font-weight: 400;
+    white-space: pre-line;
+  }
+
+  /* ── SHARE / SAVE ROW ───────────────────────────────────── */
+  .ed-action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--bd);
+  }
+
+  .ed-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    cursor: pointer;
+    transition: .15s;
+    text-decoration: none;
+  }
+
+  .ed-icon-btn:hover {
+    border-color: var(--t1);
+    color: var(--t1);
+  }
+
+  /* ── RIGHT SIDEBAR — sticky ticket panel ───────────────── */
+  .ed-sidebar {
+    position: sticky;
+    top: 72px;
+  }
+
+  .ed-ticket-panel {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-md);
+    animation: fadeUp .5s .1s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .ed-panel-head {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--bd);
+  }
+
+  .ed-panel-title {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 400;
+    color: var(--t1);
+    margin-bottom: 4px;
+  }
+
+  .ed-panel-sub {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+  }
+
+  .ed-panel-body {
+    padding: 18px 22px;
+  }
+
+  /* Closed banner */
+  .ed-closed-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.18);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  /* Ticket type cards */
+  .ed-ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .ed-ticket-card {
+    position: relative;
+    border: 2px solid var(--bd);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg2);
+  }
+
+  .ed-ticket-card:has(input:checked) {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+    background: var(--accent-l);
+  }
+
+  .ed-ticket-card:has(input:disabled) {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  .ed-ticket-card input[type="radio"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .ed-ticket-card input[type="radio"]:disabled {
+    cursor: not-allowed;
+  }
+
+  .ed-ticket-info { flex: 1; pointer-events: none; }
+
+  .ed-ticket-name {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t1);
+    margin-bottom: 3px;
+  }
+
+  .ed-ticket-avail {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--t3);
+  }
+
+  .ed-ticket-avail.soldout { color: var(--danger); }
+
+  .ed-ticket-price {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--t1);
+    white-space: nowrap;
+    pointer-events: none;
+    letter-spacing: -.01em;
+  }
+
+  .ed-ticket-price small {
+    font-family: var(--sans);
+    font-size: 10px;
+    color: var(--t3);
+    vertical-align: super;
+    font-style: normal;
+    letter-spacing: .02em;
+    font-weight: 500;
+  }
+
+  /* Radio custom dot */
+  .ed-radio-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--bd2);
+    flex-shrink: 0;
+    position: relative;
+    transition: border-color .15s;
+    pointer-events: none;
+  }
+
+  .ed-ticket-card:has(input:checked) .ed-radio-dot {
+    border-color: var(--accent);
+  }
+
+  .ed-ticket-card:has(input:checked) .ed-radio-dot::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Quantity selector */
+  .ed-qty-wrap {
+    margin-bottom: 18px;
+  }
+
+  .ed-qty-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--t2);
+    margin-bottom: 8px;
+  }
+
+  .ed-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .ed-qty-btn {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--t2);
+    transition: .12s;
+    line-height: 1;
+    font-family: var(--sans);
+    font-weight: 300;
+  }
+
+  .ed-qty-btn:hover:not(:disabled) {
+    background: var(--bd);
+    color: var(--t1);
+  }
+
+  .ed-qty-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  .ed-qty-input {
+    width: 52px;
+    height: 38px;
+    text-align: center;
+    border: none;
+    border-left: 1.5px solid var(--bd2);
+    border-right: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--t1);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .ed-qty-input::-webkit-outer-spin-button,
+  .ed-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* Soldout all */
+  .ed-soldout-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+    border-radius: var(--r-md);
+    background: rgba(255,159,10,.08);
+    border: 1px solid rgba(255,159,10,.2);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: var(--warn);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  /* Register button */
+  .ed-register-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: var(--r-f);
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.35);
+  }
+
+  .ed-register-btn:hover:not(:disabled) {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,113,227,.4);
+  }
+
+  .ed-register-btn:disabled {
+    background: var(--t3);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .ed-panel-footer {
+    padding: 12px 22px 16px;
+    border-top: 1px solid var(--bd);
+  }
+
+  .ed-guarantee {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--t3);
+  }
+
+  /* No tickets */
+  .ed-no-tickets {
+    padding: 20px;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t3);
+    line-height: 1.6;
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────── */
+  @media (max-width: 820px) {
+    .ed-wrap {
+      grid-template-columns: 1fr;
+      padding-top: 24px;
+    }
+    .ed-breadcrumb { margin-bottom: 12px; }
+    .ed-sidebar { position: static; }
+    .ed-ticket-panel { box-shadow: var(--s-sm); }
+  }
+
+  @media (max-width: 500px) {
+    .ed-meta-row { gap: 6px; }
+    .ed-meta-chip { font-size: 11.5px; padding: 6px 11px; }
+    .ed-action-row { flex-wrap: wrap; }
+  }
+</style>
+
+<div class="ed-wrap">
+
+  <!-- Breadcrumb -->
+  <div class="ed-breadcrumb">
+    <a href="{% url 'events:home' %}">Events</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+    <span>{{ event.title|truncatechars:40 }}</span>
+  </div>
+
+  <!-- ── LEFT ─────────────────────────────────────────────── -->
+  <div class="ed-left">
+
+    <!-- Image -->
+    <div class="ed-image-wrap">
+      {% if event.image %}
+        <img src="{{ event.image.url }}" alt="{{ event.title }}">
+      {% else %}
+        <div class="ed-image-placeholder">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="4" y="8" width="40" height="32" rx="5"/>
+            <circle cx="16" cy="20" r="4"/>
+            <path d="M4 33l10-10 8 8 6-6 16 13"/>
+          </svg>
+          <span>No image provided</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Heading -->
+    <div class="ed-head">
+      <div class="ed-tags">
+        <span class="ed-tag">Event</span>
+        {% if registration_closed %}
+          <span class="ed-tag closed">Registration Closed</span>
+        {% else %}
+          <span class="ed-tag live">Open</span>
+        {% endif %}
+      </div>
+      <h1 class="ed-title">{{ event.title }}</h1>
+    </div>
+
+    <!-- Meta chips -->
+    <div class="ed-meta-row">
+      <div class="ed-meta-chip">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="3" width="12" height="11" rx="2"/>
+          <path d="M5 1v4M11 1v4M2 7h12"/>
+        </svg>
+        Start: {{ event.start_date }} · {{ event.start_time }}
+      </div>
+      <div class="ed-meta-chip">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="3" width="12" height="11" rx="2"/>
+          <path d="M5 1v4M11 1v4M2 7h12"/>
+          <path d="M5 11h6"/>
+        </svg>
+        End: {{ event.end_date }} · {{ event.end_time }}
+      </div>
+      <div class="ed-meta-chip">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M8 1.5A4.5 4.5 0 0 1 12.5 6C12.5 10 8 14.5 8 14.5S3.5 10 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
+          <circle cx="8" cy="6" r="1.5"/>
+        </svg>
+        {{ event.location }}
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div>
+      <div class="ed-section-label">About this event</div>
+      <p class="ed-desc">{{ event.description }}</p>
+    </div>
+
+    <!-- Share / save row -->
+    <div class="ed-action-row">
+      <button class="ed-icon-btn" onclick="navigator.clipboard.writeText(window.location.href).then(()=>this.textContent='✓ Copied!')">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M10.5 1H5.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V4.5L10.5 1Z"/>
+          <path d="M10 1v4h3.5M4.5 5H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1.5"/>
+        </svg>
+        Share
+      </button>
+      <button class="ed-icon-btn">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M8 13.5S1.5 9 1.5 5A3.5 3.5 0 0 1 8 2.7 3.5 3.5 0 0 1 14.5 5C14.5 9 8 13.5 8 13.5Z"/>
+        </svg>
+        Save
+      </button>
+      <a class="ed-icon-btn" href="{% url 'events:home' %}">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M10 3L4 8l6 5"/>
+        </svg>
+        All Events
+      </a>
+    </div>
+  </div>
+
+  <!-- ── RIGHT SIDEBAR ─────────────────────────────────────── -->
+  <aside class="ed-sidebar">
+    <div class="ed-ticket-panel">
+
+      <div class="ed-panel-head">
+        <div class="ed-panel-title">Get Tickets</div>
+        <div class="ed-panel-sub">Select a ticket type and quantity below</div>
+      </div>
+
+      <div class="ed-panel-body">
+
+        {% if registration_closed %}
+          <div class="ed-closed-banner">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+              <circle cx="8" cy="8" r="6.5"/>
+              <path d="M8 5v3.5M8 11h.01"/>
+            </svg>
+            Registrations are closed for this event.
+          </div>
+        {% endif %}
+
+        {% if ticket_types %}
+          <form method="get" action="{% url 'events:registration_form' event.slug %}">
+
+            <div class="ed-ticket-list">
+              {% for ticket in ticket_types %}
+                <label class="ed-ticket-card">
+                  <div class="ed-radio-dot"></div>
+
+                  <div class="ed-ticket-info">
+                    <div class="ed-ticket-name">{{ ticket.name }}</div>
+                    <div class="ed-ticket-avail {% if ticket.available_quantity == 0 %}soldout{% endif %}">
+                      {% if ticket.available_quantity == 0 %}
+                        Sold out
+                      {% else %}
+                        {{ ticket.available_quantity }} available
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="ed-ticket-price">
+                    <small>INR</small> {{ ticket.price }}
+                  </div>
+
+                  <input type="radio" name="ticket_type" value="{{ ticket.id }}"
+                    {% if registration_closed %}disabled
+                    {% elif ticket.available_quantity == 0 %}disabled
+                    {% elif forloop.first %}checked
+                    {% endif %}>
+                </label>
+              {% endfor %}
             </div>
 
-            <div class="form-group">
-                <label>Quantity</label>
-                <div class="qty-selector">
-                    <button type="button" class="qty-btn" data-qty-action="dec" data-qty-target="#quantity-input">-</button>
-                    <input id="quantity-input" type="number" name="quantity" value="1" min="1">
-                    <button type="button" class="qty-btn" data-qty-action="inc" data-qty-target="#quantity-input">+</button>
-                </div>
-            </div>
             {% if not has_available %}
-                <div class="message">All ticket types are sold out.</div>
+              <div class="ed-soldout-note">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <circle cx="8" cy="8" r="6.5"/>
+                  <path d="M8 5v3.5M8 11h.01"/>
+                </svg>
+                All ticket types are sold out.
+              </div>
             {% endif %}
-            <button class="btn" type="submit" {% if not has_available or registration_closed %}disabled{% endif %}>Register</button>
-        </form>
-    {% else %}
-        <p>No ticket types yet. Please check back later.</p>
-    {% endif %}
-</section>
+
+            <div class="ed-qty-wrap">
+              <div class="ed-qty-label">Quantity</div>
+              <div class="ed-qty-row">
+                <button type="button" class="ed-qty-btn" id="qty-dec">−</button>
+                <input class="ed-qty-input" id="qty-input" type="number" name="quantity" value="1" min="1" max="10">
+                <button type="button" class="ed-qty-btn" id="qty-inc">+</button>
+              </div>
+            </div>
+
+            <button class="ed-register-btn" type="submit"
+              {% if not has_available or registration_closed %}disabled{% endif %}>
+              {% if registration_closed %}
+                Registration Closed
+              {% elif not has_available %}
+                Sold Out
+              {% else %}
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 8h12M9 3l5 5-5 5"/></svg>
+                Register Now
+              {% endif %}
+            </button>
+
+          </form>
+        {% else %}
+          <div class="ed-no-tickets">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" style="margin-bottom:10px;opacity:.35">
+              <path d="M4 11v10a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V11M4 11a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2M4 11h24M12 9V7a2 2 0 0 1 4 0v2"/>
+            </svg>
+            <div>No ticket types available yet.</div>
+            <div style="margin-top:4px;font-size:12px">Please check back later.</div>
+          </div>
+        {% endif %}
+
+      </div>
+
+      <div class="ed-panel-footer">
+        <div class="ed-guarantee">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M8 1.5L3 4v4.5C3 12 8 14.5 8 14.5S13 12 13 8.5V4L8 1.5Z"/>
+            <path d="M5.5 8l2 2 3-3"/>
+          </svg>
+          Secure checkout · Instant confirmation
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div>
+
+<script>
+  /* Quantity stepper */
+  const input = document.getElementById('qty-input');
+  const dec   = document.getElementById('qty-dec');
+  const inc   = document.getElementById('qty-inc');
+
+  if (input && dec && inc) {
+    function updateBtns() {
+      dec.disabled = parseInt(input.value) <= 1;
+      inc.disabled = parseInt(input.value) >= parseInt(input.max || 999);
+    }
+    dec.addEventListener('click', () => { input.value = Math.max(1, parseInt(input.value) - 1); updateBtns(); });
+    inc.addEventListener('click', () => { input.value = Math.min(parseInt(input.max || 999), parseInt(input.value) + 1); updateBtns(); });
+    input.addEventListener('input', updateBtns);
+    updateBtns();
+  }
+</script>
 {% endblock %}

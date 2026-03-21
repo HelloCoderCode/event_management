@@ -1,42 +1,519 @@
 {% extends "base.html" %}
-{% block title %}Edit Registration{% endblock %}
+{% block title %}Edit Registration · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Edit Registration</h1>
-    <p><strong>Booking ID:</strong> {{ registration.booking_id }}</p>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        <div class="form-group">
-            <label>Name</label>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ─────────────────────────────────────────────────────── */
+  .er-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 40px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  .er-header {
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .er-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 12px;
+  }
+
+  .er-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .er-breadcrumb a:hover { color: var(--t1); }
+
+  .er-title-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .er-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--r-md);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .er-title {
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+  }
+
+  .er-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+    margin-top: 6px;
+    margin-left: 53px;
+  }
+
+  .er-booking-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    font-family: var(--sans);
+    font-size: 11.5px;
+    color: var(--t3);
+    font-weight: 500;
+    letter-spacing: .03em;
+    margin-top: 10px;
+    margin-left: 53px;
+  }
+
+  .er-booking-pill span {
+    color: var(--t1);
+    font-weight: 600;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* ── CARD ──────────────────────────────────────────────────────── */
+  .er-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .er-card-head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .er-card-head-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .er-card-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .er-card-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .er-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: rgba(52,199,89,.1);
+    color: #34c759;
+    border: 1px solid rgba(52,199,89,.2);
+  }
+
+  .er-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #34c759;
+  }
+
+  /* ── FORM BODY ─────────────────────────────────────────────────── */
+  .er-body {
+    padding: 22px 22px 8px;
+  }
+
+  .er-section-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .er-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--bd);
+  }
+
+  .er-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .er-grid.full  { grid-template-columns: 1fr; }
+  .er-grid.tri   { grid-template-columns: 1fr 1fr 100px; }
+  .er-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .er-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .er-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .er-required { color: var(--accent); margin-left: 2px; }
+
+  .er-hint {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    margin-top: 2px;
+  }
+
+  /* Style all Django-rendered form inputs */
+  .er-body input[type="text"],
+  .er-body input[type="email"],
+  .er-body input[type="number"],
+  .er-body input[type="url"],
+  .er-body input[type="tel"],
+  .er-body input[type="password"],
+  .er-body select,
+  .er-body textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .er-body input:focus,
+  .er-body select:focus,
+  .er-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+  }
+
+  .er-body select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23aeaeb2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    cursor: pointer;
+  }
+
+  .er-body textarea {
+    resize: vertical;
+    min-height: 82px;
+    line-height: 1.5;
+  }
+
+  /* Checkbox fields */
+  .er-body input[type="checkbox"] {
+    width: 16px; height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  /* Error styling */
+  .er-field-error {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .er-non-field-errors {
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.2);
+    border-radius: var(--r-sm);
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+  }
+
+  .er-divider {
+    height: 1px;
+    background: var(--bd);
+    margin: 18px 0;
+  }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
+  .er-footer {
+    padding: 14px 22px 20px;
+    border-top: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .er-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .er-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  .er-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 26px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .er-save-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+  @media (max-width: 580px) {
+    .er-wrap { padding-top: 24px; }
+    .er-grid, .er-grid.tri, .er-grid.three { grid-template-columns: 1fr; }
+    .er-footer { flex-direction: column-reverse; }
+    .er-save-btn, .er-back-btn { width: 100%; justify-content: center; }
+    .er-sub, .er-booking-pill { margin-left: 0; }
+  }
+</style>
+
+<div class="er-wrap">
+
+  <!-- Header -->
+  <div class="er-header">
+    <div class="er-breadcrumb">
+      <a href="{% url 'events:organizer_dashboard' %}">Dashboard</a>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <a href="{% url 'events:event_manage' event.public_id %}">{{ event.title|truncatechars:28 }}</a>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <a href="{% url 'events:registrations_list' event.public_id %}">Registrations</a>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <span>Edit Registration</span>
+    </div>
+
+    <div class="er-title-row">
+      <div class="er-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M13 2.5l2.5 2.5-9 9-3 .5.5-3 9-9z"/>
+          <path d="M11.5 4l2.5 2.5"/>
+        </svg>
+      </div>
+      <h1 class="er-title">Edit Registration</h1>
+    </div>
+    <p class="er-sub">Update attendee details for <em>{{ event.title }}</em>.</p>
+
+    <div class="er-booking-pill">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M4 1v2M8 1v2M1 5h10"/>
+      </svg>
+      Booking ID <span>#{{ registration.booking_id }}</span>
+    </div>
+  </div>
+
+  <!-- Card -->
+  <div class="er-card">
+
+    <div class="er-card-head">
+      <div class="er-card-head-left">
+        <div class="er-card-icon">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="8" cy="5" r="3"/><path d="M2 13c0-3 2.7-5 6-5s6 2 6 5"/>
+          </svg>
+        </div>
+        <div class="er-card-title">Attendee Details</div>
+      </div>
+      <div class="er-status-badge">
+        <div class="er-status-dot"></div>
+        {{ registration.status|default:"Confirmed"|capfirst }}
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div class="er-body">
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+          <div class="er-non-field-errors">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <!-- Section: Core Info -->
+        <div class="er-section-label">Core info</div>
+
+        <div class="er-grid">
+          <div class="er-field">
+            <div class="er-label">Name <span class="er-required">*</span></div>
             {{ form.name }}
-        </div>
-        <div class="form-group">
-            <label>Email</label>
-            {{ form.email }}
-        </div>
-        <div class="form-group">
-            <label>Phone</label>
-            {{ form.phone }}
-        </div>
-        <div class="form-group">
-            <label>Ticket Type</label>
-            {{ form.ticket_type }}
-        </div>
-        <div class="form-group">
-            <label>Quantity</label>
-            {{ form.quantity }}
-        </div>
-        {% for field in form %}
-            {% if field.name not in "name email phone ticket_type quantity" %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
-                    {{ field }}
-                </div>
+            {% if form.name.errors %}
+              <div class="er-field-error">{{ form.name.errors|join:", " }}</div>
             {% endif %}
-        {% endfor %}
-        <button class="btn" type="submit">Save Changes</button>
-        <a class="btn btn-secondary" href="{% url 'events:registrations_list' event.public_id %}">Back</a>
+          </div>
+          <div class="er-field">
+            <div class="er-label">Email <span class="er-required">*</span></div>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="er-field-error">{{ form.email.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="er-grid tri">
+          <div class="er-field">
+            <div class="er-label">Phone</div>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="er-field-error">{{ form.phone.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+          <div class="er-field">
+            <div class="er-label">Ticket Type <span class="er-required">*</span></div>
+            {{ form.ticket_type }}
+            {% if form.ticket_type.errors %}
+              <div class="er-field-error">{{ form.ticket_type.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+          <div class="er-field">
+            <div class="er-label">Qty <span class="er-required">*</span></div>
+            {{ form.quantity }}
+            {% if form.quantity.errors %}
+              <div class="er-field-error">{{ form.quantity.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Section: Additional Fields (dynamic) -->
+        {% with extras=form|dictsort:"name" %}
+          {% for field in form %}
+            {% if field.name not in "name,email,phone,ticket_type,quantity" %}
+              {% if forloop.first %}
+                <div class="er-divider"></div>
+                <div class="er-section-label">Additional fields</div>
+                <div class="er-grid">
+              {% endif %}
+
+              <div class="er-field">
+                <div class="er-label">{{ field.label }}</div>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="er-hint">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                  <div class="er-field-error">{{ field.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+
+              {% if forloop.last %}
+                </div>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+
+      </div><!-- /.er-body -->
+
+      <!-- Footer -->
+      <div class="er-footer">
+        <a class="er-back-btn" href="{% url 'events:registrations_list' event.public_id %}">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+          Back to Registrations
+        </a>
+        <button class="er-save-btn" type="submit">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5 6.5-7"/></svg>
+          Save Changes
+        </button>
+      </div>
+
     </form>
-</section>
+  </div><!-- /.er-card -->
+
+</div><!-- /.er-wrap -->
+
 {% endblock %}

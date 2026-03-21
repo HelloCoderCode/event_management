@@ -6,11 +6,324 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Event Management{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+        :root{
+            --bg:#f5f5f7;
+            --bg2:#fff;
+            --glass:rgba(255,255,255,0.72);
+            --t1:#1d1d1f;
+            --t2:#6e6e73;
+            --t3:#aeaeb2;
+            --accent:#0071e3;
+            --accent-h:#0077ed;
+            --accent-l:rgba(0,113,227,.10);
+            --success:#34c759;
+            --warn:#ff9f0a;
+            --danger:#ff3b30;
+            --info:#5ac8fa;
+            --bd:rgba(0,0,0,.08);
+            --bd2:rgba(0,0,0,.14);
+            --s-xs:0 1px 2px rgba(0,0,0,.04);
+            --s-sm:0 2px 8px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+            --s-md:0 4px 16px rgba(0,0,0,.09),0 2px 4px rgba(0,0,0,.05);
+            --s-lg:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
+            --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:18px;--r-xl:24px;--r-f:9999px;
+            --font:-apple-system,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+        }
+
+        html{
+            font-family:var(--font);
+            background:var(--bg);
+            color:var(--t1);
+            -webkit-font-smoothing:antialiased;
+            font-size:16px;
+        }
+
+        body{
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            overflow-x:hidden;
+        }
+
+        a{ color:inherit; text-decoration:none; }
+
+        /* ── NAVBAR — exact from reference ─────────────────────────── */
+        .site-header{
+            position:sticky;
+            top:0;
+            z-index:100;
+            height:52px;
+            background:var(--glass);
+            backdrop-filter:saturate(180%) blur(20px);
+            -webkit-backdrop-filter:saturate(180%) blur(20px);
+            border-bottom:1px solid var(--bd);
+        }
+
+        .header-inner{
+            max-width:1120px;
+            margin:0 auto;
+            padding:0 24px;
+            height:100%;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+        }
+
+        /* Logo */
+        .logo{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            text-decoration:none;
+            color:var(--t1);
+            font-size:17px;
+            font-weight:600;
+            letter-spacing:-.4px;
+        }
+
+        .logo-icon{
+            width:26px;
+            height:26px;
+            background:var(--t1);
+            border-radius:7px;
+            display:grid;
+            place-items:center;
+            flex-shrink:0;
+        }
+
+        /* Nav links */
+        .site-header nav{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+
+        .site-header nav a{
+            text-decoration:none;
+            color:var(--t2);
+            font-size:13.5px;
+            font-weight:450;
+            padding:5px 11px;
+            border-radius:var(--r-f);
+            transition:.15s;
+            white-space:nowrap;
+        }
+
+        .site-header nav a:hover{
+            color:var(--t1);
+            background:rgba(0,0,0,.04);
+        }
+
+        .site-header nav a.nav-cta{
+            background:var(--accent);
+            color:#fff;
+            font-weight:500;
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+        }
+
+        .site-header nav a.nav-cta:hover{
+            background:var(--accent-h);
+        }
+
+        /* Hamburger */
+        .nav-ham{
+            display:none;
+            flex-direction:column;
+            gap:5px;
+            padding:7px;
+            border:none;
+            background:none;
+            cursor:pointer;
+            border-radius:var(--r-sm);
+            transition:.15s;
+        }
+        .nav-ham:hover{ background:rgba(0,0,0,.05); }
+        .nav-ham span{
+            display:block;width:20px;height:1.5px;
+            background:var(--t1);border-radius:2px;
+            transition:.2s;
+        }
+        .nav-ham.open span:nth-child(1){ transform:rotate(45deg) translate(4.7px,4.7px); }
+        .nav-ham.open span:nth-child(2){ opacity:0;transform:scaleX(0); }
+        .nav-ham.open span:nth-child(3){ transform:rotate(-45deg) translate(4.7px,-4.7px); }
+
+        /* Mobile drawer — same glass as nav */
+        .nav-drawer{
+            display:none;
+            position:fixed;
+            inset:52px 0 0 0;
+            background:rgba(245,245,247,.94);
+            backdrop-filter:saturate(180%) blur(20px);
+            -webkit-backdrop-filter:saturate(180%) blur(20px);
+            z-index:90;
+            padding:16px;
+            flex-direction:column;
+            gap:3px;
+            opacity:0;
+            transform:translateY(-6px);
+            transition:opacity .2s,transform .2s;
+            pointer-events:none;
+            border-bottom:1px solid var(--bd);
+        }
+        .nav-drawer.open{
+            display:flex;
+            opacity:1;
+            transform:translateY(0);
+            pointer-events:all;
+        }
+        .nav-drawer a{
+            display:flex;align-items:center;
+            padding:12px 14px;
+            font-size:15px;font-weight:500;
+            color:var(--t1);
+            border-radius:var(--r-md);
+            transition:.15s;
+            text-decoration:none;
+        }
+        .nav-drawer a:hover{ background:rgba(0,0,0,.04); }
+        .nav-drawer hr{ border:none;border-top:1px solid var(--bd);margin:6px 2px; }
+
+        /* ── MAIN ─────────────────────────────────────────────────── */
+        main.container{
+            flex:1;
+            width:100%;
+            margin:0 auto;
+            padding:0 24px 80px;
+            width:100%;
+            animation:fadeUp .45s cubic-bezier(.22,1,.36,1) both;
+        }
+
+        @keyframes fadeUp{
+            from{opacity:0;transform:translateY(14px)}
+            to{opacity:1;transform:none}
+        }
+
+        /* ── TOASTS — exact from reference ──────────────────────────── */
+        .messages{
+            position:fixed;
+            top:68px;
+            right:20px;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            z-index:9000;
+            pointer-events:none;
+        }
+
+        .message{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:12px 16px;
+            background:var(--glass);
+            backdrop-filter:blur(20px) saturate(180%);
+            -webkit-backdrop-filter:blur(20px) saturate(180%);
+            border:1px solid var(--bd2);
+            border-radius:var(--r-md);
+            box-shadow:var(--s-lg);
+            font-size:13px;
+            max-width:300px;
+            color:var(--t1);
+            pointer-events:all;
+            animation:toastIn .35s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        @keyframes toastIn{
+            from{opacity:0;transform:translateX(16px) scale(.95)}
+            to{opacity:1;transform:none}
+        }
+
+        .message::before{
+            content:'';
+            width:7px;height:7px;
+            border-radius:50%;
+            flex-shrink:0;
+            background:var(--t3);
+        }
+        .message.success::before{ background:var(--success); }
+        .message.error::before  { background:var(--danger); }
+        .message.warning::before{ background:var(--warn); }
+        .message.info::before   { background:var(--info); }
+
+        /* ── FOOTER ───────────────────────────────────────────────── */
+        .site-footer{
+            border-top:1px solid var(--bd);
+            background:var(--bg);
+            padding:18px 0;
+        }
+
+        .site-footer .container{
+            max-width:1120px;
+            margin:0 auto;
+            padding:0 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            flex-wrap:wrap;
+            gap:12px;
+        }
+
+        .site-footer span{
+            font-size:12px;
+            color:var(--t3);
+        }
+
+        .footer-links{
+            display:flex;
+            gap:20px;
+        }
+
+        .footer-links a{
+            font-size:12px;
+            color:var(--t3);
+            text-decoration:none;
+            transition:.15s;
+        }
+
+        .footer-links a:hover{ color:var(--t2); }
+
+        /* ── RESPONSIVE ───────────────────────────────────────────── */
+        @media(max-width:640px){
+            .site-header nav{ display:none; }
+            .nav-ham{ display:flex; }
+            .header-inner{ padding:0 16px; }
+            main.container{ padding:0 16px 60px; }
+            .messages{ right:12px; top:62px; }
+        }
+
+        /* ── SCROLLBAR & SELECTION ────────────────────────────────── */
+        ::-webkit-scrollbar{width:5px;height:5px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:99px;}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);}
+        ::selection{background:var(--accent);color:#fff;}
+        :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+    </style>
 </head>
 <body>
+
+    <!-- NAVBAR -->
     <header class="site-header">
-        <div class="container header-inner">
-            <a class="logo" href="{% url 'events:home' %}">EventManagemnt</a>
+        <div class="header-inner">
+
+            <a class="logo" href="{% url 'events:home' %}">
+                <div class="logo-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="1" y="1" width="5" height="5" rx="1.5" fill="white"/>
+                        <rect x="8" y="1" width="5" height="5" rx="1.5" fill="white" opacity=".7"/>
+                        <rect x="1" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".5"/>
+                        <rect x="8" y="8" width="5" height="5" rx="1.5" fill="white" opacity=".9"/>
+                    </svg>
+                </div>
+                EventManagemnt
+            </a>
+
+            <!-- Desktop — exact original links -->
             <nav>
                 <a href="{% url 'events:home' %}">Events</a>
                 <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
@@ -18,24 +331,106 @@
                     <a href="{% url 'users:logout' %}">Logout</a>
                 {% else %}
                     <a href="{% url 'users:login' %}">Login</a>
-                    <a href="{% url 'users:register' %}">Register</a>
+                    <a href="{% url 'users:register' %}" class="nav-cta">
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                            <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                        Register
+                    </a>
                 {% endif %}
             </nav>
+
+            <!-- Mobile hamburger -->
+            <button class="nav-ham" id="nav-ham" aria-label="Open menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+
         </div>
     </header>
+
+    <!-- Mobile drawer -->
+    <nav class="nav-drawer" id="nav-drawer" aria-hidden="true">
+        <a href="{% url 'events:home' %}">Events</a>
+        <a href="{% url 'events:organizer_dashboard' %}">Organizer</a>
+        <hr>
+        {% if user.is_authenticated %}
+            <a href="{% url 'users:logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'users:login' %}">Login</a>
+            <a href="{% url 'users:register' %}">Register</a>
+        {% endif %}
+    </nav>
+
+    <!-- MAIN -->
     <main class="container">
+
         {% if messages %}
-            <div class="messages">
+            <div class="messages" role="alert" aria-live="polite">
                 {% for message in messages %}
                     <div class="message {{ message.tags }}">{{ message }}</div>
                 {% endfor %}
             </div>
         {% endif %}
+
         {% block content %}{% endblock %}
+
     </main>
+
+    <!-- FOOTER -->
     <footer class="site-footer">
-        <div class="container">Built with Django</div>
+        <div class="container">
+            <span>Built with Django</span>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Support</a>
+            </div>
+        </div>
     </footer>
+
     <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        /* Mobile drawer */
+        const ham    = document.getElementById('nav-ham');
+        const drawer = document.getElementById('nav-drawer');
+
+        ham.addEventListener('click', () => {
+            const open = drawer.classList.toggle('open');
+            ham.classList.toggle('open', open);
+            ham.setAttribute('aria-expanded', open);
+            drawer.setAttribute('aria-hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        });
+
+        drawer.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', () => {
+                drawer.classList.remove('open');
+                ham.classList.remove('open');
+                ham.setAttribute('aria-expanded', 'false');
+                drawer.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            });
+        });
+
+        /* Active nav highlight */
+        document.querySelectorAll('.site-header nav a, .nav-drawer a').forEach(a => {
+            if (a.getAttribute('href') === location.pathname) {
+                a.style.color = 'var(--t1)';
+                a.style.background = 'rgba(0,0,0,.05)';
+            }
+        });
+
+        /* Auto-dismiss toasts after 4s */
+        setTimeout(() => {
+            document.querySelectorAll('.message').forEach((t, i) => {
+                setTimeout(() => {
+                    t.style.transition = '.3s';
+                    t.style.opacity = '0';
+                    t.style.transform = 'translateX(12px) scale(.96)';
+                    setTimeout(() => t.remove(), 300);
+                }, i * 200);
+            });
+        }, 4000);
+    </script>
 </body>
 </html>

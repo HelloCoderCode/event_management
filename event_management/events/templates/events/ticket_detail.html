@@ -1,21 +1,555 @@
 {% extends "base.html" %}
-{% block title %}Ticket {{ registration.booking_id }}{% endblock %}
+{% block title %}Ticket · {{ registration.booking_id }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Your Ticket</h1>
-    <p class="badge">{{ registration.event.title }}</p>
-    <div class="ticket-summary">
-        <div><strong>Booking ID:</strong> {{ registration.booking_id }}</div>
-        <div><strong>Name:</strong> {{ registration.name }}</div>
-        <div><strong>Email:</strong> {{ registration.email }}</div>
-        <div><strong>Ticket:</strong> {{ registration.ticket_type.name }}</div>
-        <div><strong>Quantity:</strong> {{ registration.quantity }}</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── PAGE SHELL ─────────────────────────────────────────── */
+  .tk-wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding-top: 48px;
+    padding-bottom: 20px;
+  }
+
+  /* ── SUCCESS HEADER ─────────────────────────────────────── */
+  .tk-success-head {
+    text-align: center;
+    margin-bottom: 36px;
+    animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tk-check-ring {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: rgba(52,199,89,.12);
+    border: 1.5px solid rgba(52,199,89,.3);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 16px;
+    color: var(--success);
+    animation: popIn .5s .1s cubic-bezier(.34,1.56,.64,1) both;
+  }
+
+  @keyframes popIn {
+    from { opacity:0; transform: scale(.6); }
+    to   { opacity:1; transform: scale(1); }
+  }
+
+  .tk-success-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    margin-bottom: 6px;
+  }
+
+  .tk-success-sub {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  /* ── TICKET CARD ─────────────────────────────────────────── */
+  .tk-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-lg);
+    animation: fadeUp .5s .15s cubic-bezier(.22,1,.36,1) both;
+    position: relative;
+  }
+
+  /* Coloured accent bar */
+  .tk-accent-bar {
+    height: 5px;
+    background: linear-gradient(90deg, #0071e3 0%, #5ac8fa 50%, #34c759 100%);
+  }
+
+  /* Header band */
+  .tk-card-head {
+    background: var(--t1);
+    padding: 26px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tk-card-head::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 90% at 95% 50%, rgba(0,113,227,.4) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 60% at 5%  50%, rgba(52,199,89,.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .tk-card-head-inner {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .tk-event-eyebrow {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+    margin-bottom: 6px;
+  }
+
+  .tk-event-name {
+    font-family: var(--serif);
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    margin-bottom: 12px;
+  }
+
+  .tk-event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tk-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    color: rgba(255,255,255,.6);
+    font-weight: 400;
+  }
+
+  .tk-ticket-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── PERFORATED DIVIDER ─────────────────────────────────── */
+  .tk-perf {
+    position: relative;
+    height: 0;
+    border-top: 2px dashed var(--bd2);
+    margin: 0 20px;
+  }
+
+  .tk-perf::before,
+  .tk-perf::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--bd);
+  }
+
+  .tk-perf::before { left: -34px; }
+  .tk-perf::after  { right: -34px; }
+
+  /* ── BODY ───────────────────────────────────────────────── */
+  .tk-card-body {
+    padding: 28px 32px 28px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* Left: attendee details */
+  .tk-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+  }
+
+  .tk-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tk-detail-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .tk-detail-val {
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--t1);
+    line-height: 1.3;
+  }
+
+  .tk-booking-id {
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: .06em;
+    background: var(--accent-l);
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+    display: inline-block;
+    margin-top: 1px;
+  }
+
+  .tk-detail.span2 { grid-column: 1 / -1; }
+
+  /* Right: QR code */
+  .tk-qr-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .tk-qr-frame {
+    padding: 12px;
+    background: #fff;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-md);
+    box-shadow: var(--s-sm);
+  }
+
+  .tk-qr-frame img {
+    display: block;
+    width: 130px;
+    height: 130px;
+    image-rendering: pixelated;
+  }
+
+  .tk-qr-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--t3);
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: .04em;
+  }
+
+  /* ── FOOTER ACTIONS ─────────────────────────────────────── */
+  .tk-card-foot {
+    padding: 16px 32px 24px;
+    border-top: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .tk-dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    border-radius: var(--r-f);
+    background: var(--t1);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: var(--s-sm);
+  }
+
+  .tk-dl-btn:hover {
+    background: #2a2a2e;
+    transform: translateY(-1px);
+    box-shadow: var(--s-md);
+  }
+
+  .tk-share-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tk-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 15px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    cursor: pointer;
+    transition: .15s;
+    text-decoration: none;
+  }
+
+  .tk-icon-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  /* ── INFO STRIP ─────────────────────────────────────────── */
+  .tk-info-strip {
+    margin-top: 20px;
+    border-radius: var(--r-lg);
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: fadeUp .5s .25s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tk-info-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-sm);
+    background: var(--accent-l);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .tk-info-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t2);
+    line-height: 1.55;
+    font-weight: 300;
+  }
+
+  .tk-info-text strong {
+    font-weight: 600;
+    color: var(--t1);
+  }
+
+  /* ── BACK LINK ──────────────────────────────────────────── */
+  .tk-back-row {
+    margin-top: 28px;
+    text-align: center;
+    animation: fadeUp .5s .3s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tk-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t3);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .tk-back-link:hover { color: var(--t1); }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────── */
+  @media (max-width: 620px) {
+    .tk-wrap { padding-top: 28px; }
+    .tk-card-head { padding: 22px 20px 20px; }
+    .tk-card-head-inner { flex-direction: column; gap: 14px; }
+    .tk-card-body {
+      grid-template-columns: 1fr;
+      padding: 22px 20px;
+    }
+    .tk-qr-block { flex-direction: row; align-items: center; }
+    .tk-qr-frame img { width: 90px; height: 90px; }
+    .tk-details-grid { grid-template-columns: 1fr 1fr; gap: 16px 14px; }
+    .tk-card-foot { padding: 14px 20px 20px; flex-direction: column; }
+    .tk-dl-btn, .tk-icon-btn { width: 100%; justify-content: center; }
+    .tk-share-row { width: 100%; }
+    .tk-perf { margin: 0 14px; }
+  }
+
+  @media (max-width: 400px) {
+    .tk-details-grid { grid-template-columns: 1fr; }
+    .tk-detail.span2 { grid-column: 1; }
+  }
+</style>
+
+<div class="tk-wrap">
+
+  <!-- Success header -->
+  <div class="tk-success-head">
+    <div class="tk-check-ring">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12l5 5L19 7"/>
+      </svg>
     </div>
-    <div class="qr">
-        <img src="data:image/png;base64,{{ qr_data }}" alt="QR Code">
+    <h1 class="tk-success-title">You're registered!</h1>
+    <p class="tk-success-sub">A confirmation has been sent to {{ registration.email }}</p>
+  </div>
+
+  <!-- Ticket card -->
+  <div class="tk-card">
+
+    <div class="tk-accent-bar"></div>
+
+    <!-- Dark header -->
+    <div class="tk-card-head">
+      <div class="tk-card-head-inner">
+        <div>
+          <div class="tk-event-eyebrow">Event Ticket</div>
+          <div class="tk-event-name">{{ registration.event.title }}</div>
+          <div class="tk-event-meta">
+            <div class="tk-meta-item">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 1v4M11 1v4M2 7h12"/>
+              </svg>
+              {{ registration.event.start_date }} · {{ registration.event.start_time }}
+            </div>
+            <div class="tk-meta-item">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M8 1.5A4.5 4.5 0 0 1 12.5 6C12.5 10 8 14.5 8 14.5S3.5 10 3.5 6A4.5 4.5 0 0 1 8 1.5Z"/>
+                <circle cx="8" cy="6" r="1.5"/>
+              </svg>
+              {{ registration.event.location }}
+            </div>
+          </div>
+        </div>
+        <div class="tk-ticket-badge">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M1 9.5A2.5 2.5 0 0 0 3.5 12H5l1 2 1-2h3l1 2 1-2h1.5A2.5 2.5 0 0 0 15 9.5v-3A2.5 2.5 0 0 0 12.5 4H3.5A2.5 2.5 0 0 0 1 6.5v3Z"/>
+          </svg>
+          {{ registration.ticket_type.name }} × {{ registration.quantity }}
+        </div>
+      </div>
     </div>
-    <div style="margin-top:16px;">
-        <a class="btn" href="{% url 'events:ticket_pdf' registration.booking_id %}">Download PDF Ticket</a>
+
+    <!-- Perforated tear line -->
+    <div class="tk-perf"></div>
+
+    <!-- Body: details + QR -->
+    <div class="tk-card-body">
+      <div class="tk-details-grid">
+
+        <div class="tk-detail span2">
+          <div class="tk-detail-label">Booking ID</div>
+          <div class="tk-booking-id">{{ registration.booking_id }}</div>
+        </div>
+
+        <div class="tk-detail">
+          <div class="tk-detail-label">Name</div>
+          <div class="tk-detail-val">{{ registration.name }}</div>
+        </div>
+
+        <div class="tk-detail">
+          <div class="tk-detail-label">Email</div>
+          <div class="tk-detail-val" style="word-break:break-all">{{ registration.email }}</div>
+        </div>
+
+        <div class="tk-detail">
+          <div class="tk-detail-label">Ticket Type</div>
+          <div class="tk-detail-val">{{ registration.ticket_type.name }}</div>
+        </div>
+
+        <div class="tk-detail">
+          <div class="tk-detail-label">Quantity</div>
+          <div class="tk-detail-val">{{ registration.quantity }}</div>
+        </div>
+
+      </div>
+
+      <!-- QR Code -->
+      <div class="tk-qr-block">
+        <div class="tk-qr-frame">
+          <img src="data:image/png;base64,{{ qr_data }}" alt="QR Code for {{ registration.booking_id }}">
+        </div>
+        <div class="tk-qr-label">Scan at entry</div>
+      </div>
     </div>
-</section>
+
+    <!-- Footer actions -->
+    <div class="tk-card-foot">
+      <a class="tk-dl-btn" href="{% url 'events:ticket_pdf' registration.booking_id %}">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 2v8M5 7l3 3 3-3"/>
+          <path d="M3 13h10" stroke-linecap="round"/>
+        </svg>
+        Download PDF Ticket
+      </a>
+      <div class="tk-share-row">
+        <button class="tk-icon-btn" onclick="navigator.clipboard.writeText(window.location.href).then(()=>this.innerHTML='✓ &nbsp;Copied!')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M10.5 1H5.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V4.5L10.5 1Z"/>
+            <path d="M10 1v4h3.5M4.5 5H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1.5"/>
+          </svg>
+          Share
+        </button>
+        <button class="tk-icon-btn" onclick="window.print()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M4 5V2h8v3"/>
+            <rect x="2" y="5" width="12" height="7" rx="1.5"/>
+            <path d="M4 12v2h8v-2"/>
+            <circle cx="12.5" cy="8.5" r=".75" fill="currentColor"/>
+          </svg>
+          Print
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Info strip -->
+  <div class="tk-info-strip">
+    <div class="tk-info-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+        <circle cx="8" cy="8" r="6.5"/>
+        <path d="M8 7v4M8 5h.01"/>
+      </svg>
+    </div>
+    <div class="tk-info-text">
+      <strong>What's next?</strong> Show your QR code or booking ID at the venue entrance. 
+      Download the PDF for offline access, or save this page. 
+      Check your email for a full confirmation.
+    </div>
+  </div>
+
+  <!-- Back link -->
+  <div class="tk-back-row">
+    <a class="tk-back-link" href="{% url 'events:home' %}">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+      Browse more events
+    </a>
+  </div>
+
+</div>
+
 {% endblock %}

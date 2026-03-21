@@ -1,48 +1,532 @@
 {% extends "base.html" %}
 {% block title %}Organizer Register{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Organizer Registration</h1>
-    <form method="post">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ──────────────────────────────────────────────────────── */
+  .rg-outer {
+    min-height: 72vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px 60px;
+  }
+
+  .rg-wrap {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  .rg-header {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rg-logo {
+    width: 52px; height: 52px;
+    border-radius: var(--r-lg);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 16px;
+  }
+
+  .rg-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 5vw, 36px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .rg-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  /* ── CARD ───────────────────────────────────────────────────────── */
+  .rg-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rg-card-head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .rg-card-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .rg-card-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  /* ── FORM BODY ──────────────────────────────────────────────────── */
+  .rg-body {
+    padding: 22px 22px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  /* Error banner */
+  .rg-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.2);
+    border-radius: var(--r-sm);
+    padding: 11px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+    line-height: 1.4;
+  }
+
+  .rg-error-icon { flex-shrink: 0; margin-top: 1px; }
+
+  /* Section divider */
+  .rg-section-label {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--t3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .rg-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--bd);
+  }
+
+  /* Grid */
+  .rg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 13px;
+  }
+
+  /* Field */
+  .rg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .rg-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .rg-required { color: var(--accent); margin-left: 2px; }
+
+  .rg-field-error {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* Password wrapper */
+  .rg-pw-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .rg-pw-wrap input { padding-right: 40px !important; }
+
+  .rg-pw-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--t3);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color .15s;
+  }
+
+  .rg-pw-toggle:hover { color: var(--t1); }
+
+  /* Strength meter */
+  .rg-strength {
+    display: flex;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  .rg-strength-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--bd2);
+    transition: background .25s;
+  }
+
+  .rg-strength-bar.weak   { background: var(--danger); }
+  .rg-strength-bar.fair   { background: #ff9f0a; }
+  .rg-strength-bar.good   { background: #34c759; }
+  .rg-strength-bar.strong { background: #34c759; }
+
+  .rg-strength-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--t3);
+    margin-top: 3px;
+  }
+
+  /* Style all inputs */
+  .rg-body input[type="text"],
+  .rg-body input[type="password"],
+  .rg-body input[type="email"],
+  .rg-body input[type="tel"] {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .rg-body input::placeholder { color: var(--t3); }
+
+  .rg-body input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+  }
+
+  .rg-body input.rg-valid {
+    border-color: #34c759;
+  }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
+  .rg-footer {
+    padding: 16px 22px 20px;
+    border-top: 1px solid var(--bd);
+    background: var(--bg);
+  }
+
+  .rg-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 24px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .rg-submit-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── LOGIN LINK ─────────────────────────────────────────────────── */
+  .rg-login {
+    text-align: center;
+    margin-top: 18px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    animation: fadeUp .48s .1s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .rg-login a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .rg-login a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .rg-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="rg-outer">
+  <div class="rg-wrap">
+
+    <!-- Header -->
+    <div class="rg-header">
+      <div class="rg-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M19 8v6M22 11h-6"/>
+        </svg>
+      </div>
+      <h1 class="rg-title">Create an Account</h1>
+      <p class="rg-sub">Set up your organizer profile to start hosting events.</p>
+    </div>
+
+    <!-- Card -->
+    <div class="rg-card">
+
+      <div class="rg-card-head">
+        <div class="rg-card-icon">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M13 13v-1.5A2.5 2.5 0 0010.5 9h-5A2.5 2.5 0 003 11.5V13"/>
+            <circle cx="8" cy="5" r="3"/>
+          </svg>
+        </div>
+        <div class="rg-card-title">Organizer Registration</div>
+      </div>
+
+      <form method="post" novalidate>
         {% csrf_token %}
-        {{ form.non_field_errors }}
-        {% if form.errors %}
-            <div class="message">
-                Please fix the errors below.
+
+        <div class="rg-body">
+
+          {% if form.non_field_errors %}
+            <div class="rg-error-banner">
+              <svg class="rg-error-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11v.5"/></svg>
+              <div>{{ form.non_field_errors }}</div>
             </div>
-        {% endif %}
-        <div class="form-group">
-            <label>Username</label>
-            {{ form.username }}
-            {{ form.username.errors }}
+          {% elif form.errors %}
+            <div class="rg-error-banner">
+              <svg class="rg-error-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11v.5"/></svg>
+              <div>Please fix the errors below before continuing.</div>
+            </div>
+          {% endif %}
+
+          <!-- Section: Account -->
+          <div class="rg-section-label">Account</div>
+
+          <div class="rg-grid">
+            <div class="rg-field">
+              <div class="rg-label">Username <span class="rg-required">*</span></div>
+              {{ form.username }}
+              {% if form.username.errors %}
+                <div class="rg-field-error">{{ form.username.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="rg-field">
+              <div class="rg-label">Email <span class="rg-required">*</span></div>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <div class="rg-field-error">{{ form.email.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Section: Organization -->
+          <div class="rg-section-label">Organization</div>
+
+          <div class="rg-grid">
+            <div class="rg-field">
+              <div class="rg-label">Organization Name <span class="rg-required">*</span></div>
+              {{ form.organization_name }}
+              {% if form.organization_name.errors %}
+                <div class="rg-field-error">{{ form.organization_name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="rg-field">
+              <div class="rg-label">Phone</div>
+              {{ form.phone }}
+              {% if form.phone.errors %}
+                <div class="rg-field-error">{{ form.phone.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Section: Password -->
+          <div class="rg-section-label">Password</div>
+
+          <div class="rg-field">
+            <div class="rg-label">Password <span class="rg-required">*</span></div>
+            <div class="rg-pw-wrap">
+              {{ form.password1 }}
+              <button type="button" class="rg-pw-toggle" id="rg-pw1-toggle" title="Show password" aria-label="Toggle password visibility">
+                <svg id="rg-eye1" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                  <circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Strength meter -->
+            <div class="rg-strength" id="rg-strength-bars">
+              <div class="rg-strength-bar" id="rg-bar-1"></div>
+              <div class="rg-strength-bar" id="rg-bar-2"></div>
+              <div class="rg-strength-bar" id="rg-bar-3"></div>
+              <div class="rg-strength-bar" id="rg-bar-4"></div>
+            </div>
+            <div class="rg-strength-label" id="rg-strength-label"></div>
+            {% if form.password1.errors %}
+              <div class="rg-field-error">{{ form.password1.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="rg-field">
+            <div class="rg-label">Confirm Password <span class="rg-required">*</span></div>
+            <div class="rg-pw-wrap">
+              {{ form.password2 }}
+              <button type="button" class="rg-pw-toggle" id="rg-pw2-toggle" title="Show password" aria-label="Toggle confirm password visibility">
+                <svg id="rg-eye2" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                  <circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+            </div>
+            {% if form.password2.errors %}
+              <div class="rg-field-error">{{ form.password2.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+        </div><!-- /.rg-body -->
+
+        <div class="rg-footer">
+          <button class="rg-submit-btn" type="submit">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+            Create Account
+          </button>
         </div>
-        <div class="form-group">
-            <label>Email</label>
-            {{ form.email }}
-            {{ form.email.errors }}
-        </div>
-        <div class="form-group">
-            <label>Organization Name</label>
-            {{ form.organization_name }}
-            {{ form.organization_name.errors }}
-        </div>
-        <div class="form-group">
-            <label>Phone</label>
-            {{ form.phone }}
-            {{ form.phone.errors }}
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            {{ form.password1 }}
-            {{ form.password1.errors }}
-        </div>
-        <div class="form-group">
-            <label>Confirm Password</label>
-            {{ form.password2 }}
-            {{ form.password2.errors }}
-        </div>
-        <button class="btn" type="submit">Create Account</button>
-    </form>
-    <p>Already have an account? <a href="{% url 'users:login' %}">Login</a>.</p>
-</section>
+
+      </form>
+    </div><!-- /.rg-card -->
+
+    <p class="rg-login">
+      Already have an account? <a href="{% url 'users:login' %}">Sign in</a>
+    </p>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ── Password show/hide ─────────────────────────────────── */
+  const eyeOpen   = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>';
+  const eyeClosed = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><line x1="1" y1="1" x2="15" y2="15" stroke-linecap="round"/>';
+
+  function bindToggle(toggleId, eyeId, inputName) {
+    const btn   = document.getElementById(toggleId);
+    const eye   = document.getElementById(eyeId);
+    const input = document.querySelector('[name="' + inputName + '"]');
+    if (!btn || !input) return;
+    let vis = false;
+    btn.addEventListener('click', () => {
+      vis = !vis;
+      input.type    = vis ? 'text' : 'password';
+      eye.innerHTML = vis ? eyeClosed : eyeOpen;
+      btn.title     = vis ? 'Hide password' : 'Show password';
+    });
+  }
+
+  bindToggle('rg-pw1-toggle', 'rg-eye1', 'password1');
+  bindToggle('rg-pw2-toggle', 'rg-eye2', 'password2');
+
+  /* ── Password strength meter ────────────────────────────── */
+  const pw1     = document.querySelector('[name="password1"]');
+  const bars    = [1,2,3,4].map(i => document.getElementById('rg-bar-' + i));
+  const lbl     = document.getElementById('rg-strength-label');
+  const levels  = ['','weak','fair','good','strong'];
+  const texts   = ['','Weak','Fair','Good','Strong'];
+  const colours = ['','#ff3b30','#ff9f0a','#34c759','#34c759'];
+
+  function score(pw) {
+    if (!pw) return 0;
+    let s = 0;
+    if (pw.length >= 8)              s++;
+    if (/[A-Z]/.test(pw))            s++;
+    if (/[0-9]/.test(pw))            s++;
+    if (/[^A-Za-z0-9]/.test(pw))    s++;
+    return s;
+  }
+
+  if (pw1) {
+    pw1.addEventListener('input', () => {
+      const s = score(pw1.value);
+      bars.forEach((b, i) => {
+        b.className = 'rg-strength-bar';
+        if (pw1.value && i < s) b.classList.add(levels[s]);
+      });
+      lbl.textContent   = pw1.value ? texts[s] : '';
+      lbl.style.color   = colours[s];
+    });
+  }
+
+  /* ── Confirm password match highlight ───────────────────── */
+  const pw2 = document.querySelector('[name="password2"]');
+  if (pw1 && pw2) {
+    function checkMatch() {
+      if (!pw2.value) { pw2.classList.remove('rg-valid'); return; }
+      pw2.classList.toggle('rg-valid', pw1.value === pw2.value);
+    }
+    pw1.addEventListener('input', checkMatch);
+    pw2.addEventListener('input', checkMatch);
+  }
+})();
+</script>
+
 {% endblock %}

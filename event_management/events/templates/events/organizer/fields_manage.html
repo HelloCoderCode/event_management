@@ -1,101 +1,769 @@
 {% extends "base.html" %}
-{% block title %}Manage Registration Fields{% endblock %}
+{% block title %}Registration Fields · {{ event.title }}{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Registration Fields for {{ event.title }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ formset.management_form }}
-        <div id="field-forms">
-            {% for form in formset %}
-                <div class="card" data-form-row>
-                    {{ form.id }}
-                    <div class="form-group">
-                        <label>Label</label>
-                        {{ form.label }}
-                        {{ form.label.errors }}
-                    </div>
-                    <div class="form-group">
-                        <label>Field Type</label>
-                        {{ form.field_type }}
-                        {{ form.field_type.errors }}
-                    </div>
-                    <div class="form-group">
-                        <label>Required</label>
-                        {{ form.required }}
-                        {{ form.required.errors }}
-                    </div>
-                    {% if form.DELETE %}
-                        <label style="display:none;">Delete {{ form.DELETE }}</label>
-                        {% if form.instance.is_system %}
-                            <span class="badge">Default Field</span>
-                        {% else %}
-                            <button type="button" class="btn btn-secondary" data-remove-row>Remove</button>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
 
-        <button type="button" class="btn" id="add-field-btn">Add New Field</button>
-        <button type="submit" class="btn btn-secondary">Save Fields</button>
-        <a class="btn btn-secondary" href="{% url 'events:event_manage' event.public_id %}">Back to Manage</a>
-    </form>
-</section>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
 
-<template id="empty-form-template">
-    <div class="card" data-form-row>
-        {{ formset.empty_form.id }}
-        <div class="form-group">
-            <label>Label</label>
-            {{ formset.empty_form.label }}
-        </div>
-        <div class="form-group">
-            <label>Field Type</label>
-            {{ formset.empty_form.field_type }}
-        </div>
-        <div class="form-group">
-            <label>Required</label>
-            {{ formset.empty_form.required }}
-        </div>
-        <button type="button" class="btn btn-secondary" data-remove-row>Remove</button>
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ───────────────────────────────────────────────────── */
+  .mf-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 40px;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────────── */
+  .mf-header {
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .mf-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--t3);
+    margin-bottom: 12px;
+  }
+
+  .mf-breadcrumb a { color: var(--t3); text-decoration: none; transition: .15s; }
+  .mf-breadcrumb a:hover { color: var(--t1); }
+
+  .mf-title-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .mf-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--r-md);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .mf-title {
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+  }
+
+  .mf-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+    margin-top: 6px;
+    margin-left: 53px;
+  }
+
+  /* ── OUTER CARD ──────────────────────────────────────────────── */
+  .mf-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .mf-card-head {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mf-card-head-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .mf-card-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .mf-card-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .mf-field-count {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--t3);
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--bd);
+    transition: .2s;
+  }
+
+  /* ── FIELD ROWS CONTAINER ────────────────────────────────────── */
+  #mf-field-forms {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── INDIVIDUAL FIELD ROW ────────────────────────────────────── */
+  .mf-row {
+    background: var(--bg2);
+    border: 1.5px solid var(--bd);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+    animation: rowIn .35s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  @keyframes rowIn {
+    from { opacity:0; transform: translateY(10px) scale(.99); }
+    to   { opacity:1; transform: none; }
+  }
+
+  .mf-row:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+  }
+
+  /* Row header (drag handle + number + label preview + system badge + remove) */
+  .mf-row-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px 10px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--bd);
+    cursor: default;
+  }
+
+  .mf-drag-handle {
+    color: var(--t3);
+    cursor: grab;
+    flex-shrink: 0;
+    padding: 2px;
+    opacity: .5;
+    transition: opacity .15s;
+  }
+
+  .mf-drag-handle:hover { opacity: 1; }
+
+  .mf-row-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--bd);
+    display: grid;
+    place-items: center;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .mf-row-preview-label {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: italic;
+  }
+
+  .mf-row-preview-label.filled {
+    color: var(--t1);
+    font-style: normal;
+  }
+
+  .mf-system-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    background: rgba(90,200,250,.1);
+    color: #5ac8fa;
+    border: 1px solid rgba(90,200,250,.2);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .mf-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    color: var(--t3);
+    cursor: pointer;
+    transition: .14s;
+    flex-shrink: 0;
+  }
+
+  .mf-remove-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: rgba(255,59,48,.06);
+  }
+
+  /* Row body: 3 inputs in a row */
+  .mf-row-body {
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 160px auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .mf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .mf-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  /* Style all inputs inside rows */
+  .mf-row input[type="text"],
+  .mf-row input[type="email"],
+  .mf-row select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .mf-row input:focus,
+  .mf-row select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+    background: var(--bg2);
+  }
+
+  .mf-row select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23aeaeb2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    cursor: pointer;
+  }
+
+  /* Required toggle (compact) */
+  .mf-req-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .mf-req-toggle {
+    position: relative;
+    width: 36px; height: 20px;
+    cursor: pointer;
+    display: block;
+  }
+
+  .mf-req-toggle input {
+    opacity: 0;
+    width: 0; height: 0;
+    position: absolute;
+  }
+
+  .mf-req-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--bd2);
+    transition: background .2s;
+  }
+
+  .mf-req-toggle:has(input:checked) .mf-req-track {
+    background: var(--accent);
+  }
+
+  .mf-req-thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .mf-req-toggle:has(input:checked) .mf-req-thumb {
+    transform: translateX(16px);
+  }
+
+  /* Field errors */
+  .mf-field-error {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────── */
+  .mf-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--t3);
+    display: none;
+  }
+
+  .mf-empty.show { display: flex; }
+
+  .mf-empty svg { opacity: .25; }
+
+  .mf-empty-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  /* ── ADD BUTTON ──────────────────────────────────────────────── */
+  .mf-add-bar {
+    padding: 0 20px 16px;
+  }
+
+  .mf-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1.5px dashed var(--bd2);
+    background: transparent;
+    color: var(--t2);
+    cursor: pointer;
+    transition: .15s;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mf-add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-l);
+  }
+
+  /* ── FOOTER ──────────────────────────────────────────────────── */
+  .mf-footer {
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mf-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: var(--r-f);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    border: 1.5px solid var(--bd2);
+    background: var(--bg2);
+    text-decoration: none;
+    transition: .15s;
+  }
+
+  .mf-back-btn:hover { border-color: var(--t1); color: var(--t1); }
+
+  .mf-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 26px;
+    border-radius: var(--r-f);
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .mf-save-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────── */
+  @media (max-width: 580px) {
+    .mf-wrap { padding-top: 24px; }
+    .mf-row-body { grid-template-columns: 1fr; }
+    .mf-footer { flex-direction: column-reverse; }
+    .mf-save-btn, .mf-back-btn { width: 100%; justify-content: center; }
+    .mf-sub { margin-left: 0; margin-top: 8px; }
+  }
+</style>
+
+<div class="mf-wrap">
+
+  <!-- Header -->
+  <div class="mf-header">
+    <div class="mf-breadcrumb">
+      <a href="{% url 'events:organizer_dashboard' %}">Dashboard</a>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <a href="{% url 'events:event_manage' event.public_id %}">{{ event.title|truncatechars:28 }}</a>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l4 4-4 4"/></svg>
+      <span>Registration Fields</span>
     </div>
+    <div class="mf-title-row">
+      <div class="mf-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="2" width="14" height="14" rx="2.5"/>
+          <path d="M5 7h8M5 10.5h5"/>
+        </svg>
+      </div>
+      <h1 class="mf-title">Registration Fields</h1>
+    </div>
+    <p class="mf-sub">Configure what attendees fill in when registering for <em>{{ event.title }}</em>.</p>
+  </div>
+
+  <!-- Form card -->
+  <div class="mf-card">
+
+    <div class="mf-card-head">
+      <div class="mf-card-head-left">
+        <div class="mf-card-icon">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 11h4M5 5h3"/>
+          </svg>
+        </div>
+        <div class="mf-card-title">Fields</div>
+      </div>
+      <span class="mf-field-count" id="mf-count">{{ formset.total_form_count }} field{{ formset.total_form_count|pluralize }}</span>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      <!-- Field rows -->
+      <div id="mf-field-forms">
+
+        <!-- Empty state (shown when 0 fields) -->
+        <div class="mf-empty {% if not formset.forms %}show{% endif %}" id="mf-empty">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.3">
+            <rect x="4" y="4" width="28" height="28" rx="4"/>
+            <path d="M12 14h12M12 20h8M18 26h6"/>
+          </svg>
+          <div class="mf-empty-text">No fields yet. Click "Add Field" to get started.</div>
+        </div>
+
+        {% for form in formset %}
+        <div class="mf-row" data-form-row>
+          {{ form.id }}
+
+          <!-- Row header -->
+          <div class="mf-row-head">
+            <svg class="mf-drag-handle" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <circle cx="4.5" cy="3.5" r="1.2"/><circle cx="9.5" cy="3.5" r="1.2"/>
+              <circle cx="4.5" cy="7"   r="1.2"/><circle cx="9.5" cy="7"   r="1.2"/>
+              <circle cx="4.5" cy="10.5" r="1.2"/><circle cx="9.5" cy="10.5" r="1.2"/>
+            </svg>
+            <div class="mf-row-num">{{ forloop.counter }}</div>
+            <div class="mf-row-preview-label {% if form.instance.label %}filled{% endif %}" data-preview>
+              {{ form.instance.label|default:"Untitled field" }}
+            </div>
+            {% if form.instance.is_system %}
+              <span class="mf-system-badge">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"><path d="M5 1l1.2 2.5L9 4.1 7 6l.4 2.8L5 7.6 2.6 8.8 3 6 1 4.1l2.8-.6z"/></svg>
+                Default
+              </span>
+            {% else %}
+              <button type="button" class="mf-remove-btn" data-remove-row title="Remove field">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+              </button>
+            {% endif %}
+          </div>
+
+          <!-- Row inputs -->
+          <div class="mf-row-body">
+
+            <div class="mf-field">
+              <div class="mf-label">Label</div>
+              {{ form.label }}
+              {% if form.label.errors %}<div class="mf-field-error">{{ form.label.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="mf-field">
+              <div class="mf-label">Type</div>
+              {{ form.field_type }}
+              {% if form.field_type.errors %}<div class="mf-field-error">{{ form.field_type.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="mf-field mf-req-wrap">
+              <div class="mf-label">Req.</div>
+              <label class="mf-req-toggle" title="Required">
+                {{ form.required }}
+                <div class="mf-req-track"></div>
+                <div class="mf-req-thumb"></div>
+              </label>
+              {% if form.required.errors %}<div class="mf-field-error">{{ form.required.errors|join:", " }}</div>{% endif %}
+            </div>
+
+          </div>
+
+          {% if form.DELETE %}
+            <div style="display:none;">{{ form.DELETE }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <!-- Add field button -->
+      <div class="mf-add-bar">
+        <button type="button" class="mf-add-btn" id="mf-add-btn">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M6 1v10M1 6h10"/>
+          </svg>
+          Add Field
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div class="mf-footer">
+        <a class="mf-back-btn" href="{% url 'events:event_manage' event.public_id %}">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2L4 6l4 4"/></svg>
+          Back to Manage
+        </a>
+        <button class="mf-save-btn" type="submit">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l3.5 3.5 6.5-7"/></svg>
+          Save Fields
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<!-- Empty form template for JS cloning -->
+<template id="mf-empty-form-template">
+  <div class="mf-row" data-form-row>
+    {{ formset.empty_form.id }}
+    <div class="mf-row-head">
+      <svg class="mf-drag-handle" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <circle cx="4.5" cy="3.5" r="1.2"/><circle cx="9.5" cy="3.5" r="1.2"/>
+        <circle cx="4.5" cy="7"   r="1.2"/><circle cx="9.5" cy="7"   r="1.2"/>
+        <circle cx="4.5" cy="10.5" r="1.2"/><circle cx="9.5" cy="10.5" r="1.2"/>
+      </svg>
+      <div class="mf-row-num" data-row-num>—</div>
+      <div class="mf-row-preview-label" data-preview>Untitled field</div>
+      <button type="button" class="mf-remove-btn" data-remove-row title="Remove field">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="mf-row-body">
+      <div class="mf-field">
+        <div class="mf-label">Label</div>
+        {{ formset.empty_form.label }}
+      </div>
+      <div class="mf-field">
+        <div class="mf-label">Type</div>
+        {{ formset.empty_form.field_type }}
+      </div>
+      <div class="mf-field mf-req-wrap">
+        <div class="mf-label">Req.</div>
+        <label class="mf-req-toggle" title="Required">
+          {{ formset.empty_form.required }}
+          <div class="mf-req-track"></div>
+          <div class="mf-req-thumb"></div>
+        </label>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-    (function () {
-        const addBtn = document.getElementById("add-field-btn");
-        const container = document.getElementById("field-forms");
-        const totalForms = document.getElementById("id_form-TOTAL_FORMS");
-        const template = document.getElementById("empty-form-template");
+(function () {
+  const addBtn     = document.getElementById('mf-add-btn');
+  const container  = document.getElementById('mf-field-forms');
+  const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+  const template   = document.getElementById('mf-empty-form-template');
+  const emptyState = document.getElementById('mf-empty');
+  const countEl    = document.getElementById('mf-count');
 
-        addBtn.addEventListener("click", () => {
-            const formIndex = parseInt(totalForms.value, 10);
-            const clone = template.content.cloneNode(true);
-            clone.querySelectorAll("[name]").forEach((el) => {
-                el.name = el.name.replace("__prefix__", formIndex);
-            });
-            clone.querySelectorAll("[id]").forEach((el) => {
-                el.id = el.id.replace("__prefix__", formIndex);
-            });
-            container.appendChild(clone);
-            totalForms.value = formIndex + 1;
-        });
+  function visibleRows() {
+    return container.querySelectorAll('[data-form-row]:not([data-deleted])').length;
+  }
 
-        container.addEventListener("click", (event) => {
-            const btn = event.target.closest("[data-remove-row]");
-            if (!btn) return;
-            const row = btn.closest("[data-form-row]");
-            if (!row) return;
-            const deleteInput = row.querySelector("input[type='checkbox'][name$='-DELETE']");
-            if (deleteInput) {
-                deleteInput.checked = true;
-                row.style.display = "none";
-            } else {
-                row.remove();
-                totalForms.value = Math.max(parseInt(totalForms.value, 10) - 1, 0);
-            }
-        });
-    })();
+  function updateCount() {
+    const n = visibleRows();
+    if (countEl) countEl.textContent = n + ' field' + (n !== 1 ? 's' : '');
+  }
+
+  function updateNumbers() {
+    let i = 1;
+    container.querySelectorAll('[data-form-row]:not([data-deleted]) .mf-row-num').forEach(el => {
+      el.textContent = i++;
+    });
+  }
+
+  function updateEmpty() {
+    if (!emptyState) return;
+    emptyState.classList.toggle('show', visibleRows() === 0);
+  }
+
+  /* Live label preview inside row header */
+  function bindLabelPreview(row) {
+    const input   = row.querySelector('input[name$="-label"]');
+    const preview = row.querySelector('[data-preview]');
+    if (!input || !preview) return;
+    function sync() {
+      const v = input.value.trim();
+      preview.textContent = v || 'Untitled field';
+      preview.classList.toggle('filled', !!v);
+    }
+    input.addEventListener('input', sync);
+    sync();
+  }
+
+  /* Bind existing rows */
+  container.querySelectorAll('[data-form-row]').forEach(row => bindLabelPreview(row));
+
+  /* Add new field */
+  addBtn.addEventListener('click', () => {
+    const idx   = parseInt(totalForms.value, 10);
+    const clone = template.content.cloneNode(true);
+
+    clone.querySelectorAll('[name]').forEach(el => {
+      el.name = el.name.replace('__prefix__', idx);
+    });
+    clone.querySelectorAll('[id]').forEach(el => {
+      el.id = el.id.replace('__prefix__', idx);
+    });
+    clone.querySelectorAll('[for]').forEach(el => {
+      el.htmlFor = el.htmlFor.replace('__prefix__', idx);
+    });
+
+    const rowEl = clone.querySelector('[data-form-row]');
+    container.appendChild(clone);
+    totalForms.value = idx + 1;
+
+    /* bind preview on the newly inserted row */
+    const inserted = container.querySelectorAll('[data-form-row]');
+    const last     = inserted[inserted.length - 1];
+    if (last) {
+      bindLabelPreview(last);
+      last.querySelector('input[name$="-label"]')?.focus();
+    }
+
+    updateNumbers();
+    updateCount();
+    updateEmpty();
+  });
+
+  /* Remove / mark-delete */
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('[data-remove-row]');
+    if (!btn) return;
+    const row = btn.closest('[data-form-row]');
+    if (!row) return;
+
+    const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    if (deleteInput) {
+      deleteInput.checked = true;
+      row.setAttribute('data-deleted', '');
+      row.style.transition = 'opacity .25s, transform .25s';
+      row.style.opacity    = '0';
+      row.style.transform  = 'scale(.97)';
+      setTimeout(() => { row.style.display = 'none'; updateNumbers(); updateCount(); updateEmpty(); }, 260);
+    } else {
+      row.style.transition = 'opacity .25s, transform .25s';
+      row.style.opacity    = '0';
+      row.style.transform  = 'scale(.97)';
+      setTimeout(() => {
+        row.remove();
+        totalForms.value = Math.max(parseInt(totalForms.value, 10) - 1, 0);
+        updateNumbers(); updateCount(); updateEmpty();
+      }, 260);
+    }
+  });
+
+  updateNumbers();
+  updateCount();
+  updateEmpty();
+})();
 </script>
+
 {% endblock %}

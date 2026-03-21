@@ -1,28 +1,362 @@
 {% extends "base.html" %}
 {% block title %}Organizer Login{% endblock %}
 {% block content %}
-<section class="card">
-    <h1>Organizer Login</h1>
-    <form method="post">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wdth,wght@0,75..100,300;0,75..100,400;0,75..100,500;0,75..100,600;1,75..100,300&display=swap');
+
+  :root {
+    --serif: 'Instrument Serif', Georgia, serif;
+    --sans:  'Instrument Sans', -apple-system, sans-serif;
+  }
+
+  /* ── SHELL ──────────────────────────────────────────────────────── */
+  .lg-outer {
+    min-height: 72vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px 60px;
+  }
+
+  .lg-wrap {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  .lg-header {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .lg-logo {
+    width: 52px; height: 52px;
+    border-radius: var(--r-lg);
+    background: var(--accent-l);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 16px;
+  }
+
+  .lg-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 5vw, 36px);
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--t1);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .lg-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    font-weight: 300;
+  }
+
+  /* ── CARD ───────────────────────────────────────────────────────── */
+  .lg-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--s-sm);
+    animation: fadeUp .45s .06s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .lg-card-head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bd);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .lg-card-icon {
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    background: var(--bg2);
+    border: 1px solid var(--bd2);
+    display: grid;
+    place-items: center;
+    color: var(--t3);
+    flex-shrink: 0;
+  }
+
+  .lg-card-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  /* ── FORM BODY ──────────────────────────────────────────────────── */
+  .lg-body {
+    padding: 22px 22px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Error banner */
+  .lg-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,59,48,.07);
+    border: 1px solid rgba(255,59,48,.2);
+    border-radius: var(--r-sm);
+    padding: 11px 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--danger);
+    line-height: 1.4;
+  }
+
+  .lg-error-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--danger);
+  }
+
+  .lg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .lg-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+
+  .lg-field-error {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--danger);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* Password wrapper for show/hide toggle */
+  .lg-pw-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .lg-pw-wrap input {
+    padding-right: 40px !important;
+  }
+
+  .lg-pw-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--t3);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color .15s;
+  }
+
+  .lg-pw-toggle:hover { color: var(--t1); }
+
+  /* Style all Django-rendered inputs */
+  .lg-body input[type="text"],
+  .lg-body input[type="password"],
+  .lg-body input[type="email"] {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--bd2);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--t1);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .lg-body input::placeholder { color: var(--t3); }
+
+  .lg-body input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-l);
+  }
+
+  /* ── FOOTER ─────────────────────────────────────────────────────── */
+  .lg-footer {
+    padding: 16px 22px 20px;
+    border-top: 1px solid var(--bd);
+    background: var(--bg);
+  }
+
+  .lg-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 24px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,113,227,.3);
+  }
+
+  .lg-submit-btn:hover {
+    background: var(--accent-h);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,113,227,.4);
+  }
+
+  /* ── REGISTER LINK ──────────────────────────────────────────────── */
+  .lg-register {
+    text-align: center;
+    margin-top: 18px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--t3);
+    animation: fadeUp .48s .1s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .lg-register a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: .15s;
+  }
+
+  .lg-register a:hover { text-decoration: underline; }
+</style>
+
+<div class="lg-outer">
+  <div class="lg-wrap">
+
+    <!-- Header -->
+    <div class="lg-header">
+      <div class="lg-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="11" width="18" height="11" rx="2.5"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <h1 class="lg-title">Organizer Login</h1>
+      <p class="lg-sub">Sign in to manage your events.</p>
+    </div>
+
+    <!-- Card -->
+    <div class="lg-card">
+
+      <div class="lg-card-head">
+        <div class="lg-card-icon">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/>
+          </svg>
+        </div>
+        <div class="lg-card-title">Sign In</div>
+      </div>
+
+      <form method="post" novalidate>
         {% csrf_token %}
-        {{ form.non_field_errors }}
-        {% if form.errors %}
-            <div class="message">
-                Please check your username and password.
+
+        <div class="lg-body">
+
+          {% if form.errors %}
+            <div class="lg-error-banner">
+              <svg class="lg-error-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11v.5"/>
+              </svg>
+              <div>Please check your username and password and try again.</div>
             </div>
-        {% endif %}
-        <div class="form-group">
-            <label>Username</label>
+          {% endif %}
+
+          <div class="lg-field">
+            <div class="lg-label">Username</div>
             {{ form.username }}
-            {{ form.username.errors }}
+            {% if form.username.errors %}
+              <div class="lg-field-error">{{ form.username.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+          <div class="lg-field">
+            <div class="lg-label">Password</div>
+            <div class="lg-pw-wrap">
+              {{ form.password }}
+              <button type="button" class="lg-pw-toggle" id="lg-pw-toggle" title="Show password" aria-label="Toggle password visibility">
+                <svg id="lg-eye-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                  <circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <div class="lg-field-error">{{ form.password.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+
+        </div><!-- /.lg-body -->
+
+        <div class="lg-footer">
+          <button class="lg-submit-btn" type="submit">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+            Sign In
+          </button>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            {{ form.password }}
-            {{ form.password.errors }}
-        </div>
-        <button class="btn" type="submit">Login</button>
-    </form>
-    <p>New organizer? <a href="{% url 'users:register' %}">Register here</a>.</p>
-</section>
+
+      </form>
+    </div><!-- /.lg-card -->
+
+    <p class="lg-register">
+      New organizer? <a href="{% url 'users:register' %}">Create an account</a>
+    </p>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  const toggle  = document.getElementById('lg-pw-toggle');
+  const eyeIcon = document.getElementById('lg-eye-icon');
+  const pwInput = document.querySelector('[name="password"]');
+  if (!toggle || !pwInput) return;
+
+  const eyeOpen   = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>';
+  const eyeClosed = '<path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><line x1="1" y1="1" x2="15" y2="15" stroke-linecap="round"/>';
+
+  let visible = false;
+
+  toggle.addEventListener('click', () => {
+    visible = !visible;
+    pwInput.type     = visible ? 'text' : 'password';
+    eyeIcon.innerHTML = visible ? eyeClosed : eyeOpen;
+    toggle.title     = visible ? 'Hide password' : 'Show password';
+  });
+})();
+</script>
+
 {% endblock %}
