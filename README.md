@@ -112,10 +112,30 @@ python manage.py migrate
 ```bash
 python manage.py createsuperuser
 ```
+#  7. Add SMTP Email (IMPORTANT)
+
+Open:
+
+```bash
+doctor_appointment_system/settings.py
+```
+
+Add this at bottom 
+
+```python
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your_email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your_app_password'
+```
 
 ---
 
-###  7. Run Server
+---
+
+###  8. Run Server
 
 ```bash
 python manage.py runserver
@@ -123,7 +143,7 @@ python manage.py runserver
 
 ---
 
-###  8. Open in Browser
+###  9. Open in Browser
 
 * Home: http://127.0.0.1:8000/
 * Admin: http://127.0.0.1:8000/admin/
