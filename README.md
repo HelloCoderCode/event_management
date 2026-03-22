@@ -116,7 +116,7 @@ python manage.py createsuperuser
 Open:
 
 ```bash
-doctor_appointment_system/settings.py
+event_management/event_management/settings.py
 ```
 
 Add this at bottom 
