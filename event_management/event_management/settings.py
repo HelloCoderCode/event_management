@@ -134,10 +134,3 @@ DEFAULT_FROM_EMAIL = "no-reply@eventmanagemnt.local"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Your SMTP server host
-EMAIL_PORT = 587  # Your SMTP server port (587 for TLS)
-EMAIL_USE_TLS = True  # Enable TLS (True or False)
-EMAIL_HOST_USER = 'ashwini.amaz.111@gmail.com'  # Your SMTP username
-EMAIL_HOST_PASSWORD = 'evwivtalqhdqpiro'  # Your SMTP password
