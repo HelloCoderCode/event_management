@@ -14,6 +14,7 @@ from django.db.models import Sum, Count
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
+from django.db import transaction
 
 from .forms import (
     EventForm,
@@ -453,10 +454,13 @@ def toggle_event_status(request, event_id):
 def delete_event_confirm(request, event_id):
     event = get_object_or_404(Event, public_id=event_id, organizer=request.user)
     if request.method == "POST":
+    with transaction.atomic():
+        # Remove registrations first so protected ticket types can be deleted.
+        event.registrations.all().delete()
         event.delete()
-        messages.success(request, "Event and all associated data deleted.")
-        return redirect("events:organizer_dashboard")
-    return render(request, "events/organizer/event_delete_confirm.html", {"event": event})
+    messages.success(request, "Event and all associated data deleted.")
+    return redirect("events:organizer_dashboard")
+
 
 
 @login_required
