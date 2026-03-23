@@ -60,7 +60,7 @@ A complete Event Management System built using Django where users can explore ev
 ###  1. Clone Repository
 
 ```bash
-git clone https://github.com/SoftwareTechnology-Hub/event_management.git
+git clone git remote https://github.com/HelloCoderCode/event_management.git
 cd event_management/event_management
 ```
 
@@ -179,12 +179,13 @@ event_management/
 * Email verification system
 * Mobile responsive UI
 * Event analytics dashboard
+* Custom 404 and 500 error pages
 
 ---
 
 ##  Author
 
-Developed by SoftwareTechnology-Hub 
+Developed by HelloCoderCode
 
 ---
 
